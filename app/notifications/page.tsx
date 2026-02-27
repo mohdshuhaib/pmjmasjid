@@ -51,12 +51,12 @@ export default async function NotificationsPage() {
     "use server";
     const supabase = await createClient();
     await supabase.auth.signOut();
-    redirect("/");
+    redirect("/login");
   };
 
   return (
     <NotificationsClient
-      notices={notices || []} 
+      notices={notices || []}
       initialReadIds={readIds}
       payments={payments}
       logoutAction={handleLogout}

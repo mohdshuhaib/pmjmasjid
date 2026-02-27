@@ -88,7 +88,7 @@ export default async function MemberDashboard() {
     "use server";
     const supabase = await createClient();
     await supabase.auth.signOut();
-    redirect("/");
+    redirect("/login");
   };
 
   // --- Calculations for Total Family Amounts ---

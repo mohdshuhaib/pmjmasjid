@@ -4,15 +4,27 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Users, Menu, X, LogOut, Settings, Heart, MicVocal, UserCog, Info, IndianRupee, Logs } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createBrowserClient } from "@supabase/ssr";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
+  // Initialize the SSR-compatible browser client
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const handleLogout = async () => {
+    // 1. Sign out (this will now properly clear the SSR cookies)
     await supabase.auth.signOut();
+
+    // 2. Refresh the router so Next.js clears its server-side cache
+    router.refresh();
+
+    // 3. Redirect to login
     router.push("/admin/login");
   };
 
@@ -40,7 +52,7 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto">
         {navLinks.map((link) => {
           const Icon = link.icon;
           const isActive = pathname === link.href;
@@ -93,7 +105,7 @@ export default function Sidebar() {
       {isOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
-          <div className="relative z-50 h-full w-64 transform transition-transform duration-300">
+          <div className="relative z-50 h-full w-64 transform transition-transform duration-300 bg-slate-900">
             <button
               onClick={() => setIsOpen(false)}
               className="absolute -right-12 top-4 p-2 bg-slate-800 text-white rounded-full shadow-lg"
