@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- MARRIAGE CERTIFICATE PRINTING CSS --- */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0; /* Borderless printing */
+  }
+
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: white !important;
+  }
+
+  /* Hide absolutely everything on the page */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Except the printable area and its children */
+  #printable-area,
+  #printable-area * {
+    visibility: visible;
+  }
+
+  /* Stretch the printable area to cover the exact A4 page */
+  #printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 297mm !important; /* A4 width */
+    height: 210mm !important; /* A4 height */
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+}
