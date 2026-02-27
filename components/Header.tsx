@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Globe, User } from "lucide-react";
+import { Menu, X, Globe, User, ShieldCheck } from "lucide-react";
 import { TRANSLATIONS, Language } from "@/lib/translations";
 import { MoonIcon } from "@/components/MoonIcon";
-import { supabase } from "@/lib/supabase"; // Import your supabase client
+import { supabase } from "@/lib/supabase";
 
 interface HeaderProps {
   lang: Language;
@@ -15,45 +15,77 @@ interface HeaderProps {
 export default function Header({ lang, setLang }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const t = TRANSLATIONS[lang];
 
-  // Check auth state on mount and listen for changes
   useEffect(() => {
+    // Helper function to check session and role
+    const checkAuthStatus = async (user: any) => {
+      if (!user) {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+        return;
+      }
+
+      setIsLoggedIn(true);
+      // Fetch user role to determine which dashboard to link to
+      const { data } = await supabase.from('users').select('role').eq('id', user.id).single();
+      if (data?.role === 'admin') {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsLoggedIn(!!session);
+      checkAuthStatus(session?.user);
     });
 
     // Listen for auth changes (e.g., login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
+      checkAuthStatus(session?.user);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Determine the link and text based on auth state
-  const authLink = isLoggedIn ? "/dashboard" : "/login";
-  const authText = isLoggedIn ? (lang === 'en' ? "Dashboard" : "ഡാഷ്‌ബോർഡ്") : t.login;
+  // Determine the link, text, and icon based on auth state and role
+  let authLink = "/login";
+  let authText = t.login;
+  let AuthIcon = User;
+
+  if (isLoggedIn) {
+    if (isAdmin) {
+      authLink = "/admin/dashboard";
+      authText = lang === 'en' ? "Admin Portal" : "അഡ്മിൻ പോർട്ടൽ";
+      AuthIcon = ShieldCheck;
+    } else {
+      authLink = "/dashboard";
+      authText = lang === 'en' ? "Dashboard" : "ഡാഷ്‌ബോർഡ്";
+      AuthIcon = User;
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo area */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center shadow-inner">
+
+          {/* Logo area wrapped in Link */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
               <MoonIcon className="text-white w-7 h-7" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-xl text-slate-800 leading-tight">
+              <span className="font-bold text-xl text-slate-800 leading-tight group-hover:text-emerald-700 transition-colors">
                 {t.masjidName}
               </span>
               <span className="text-xs text-emerald-600 font-medium tracking-wide">
                 {t.subtitle}
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-6">
@@ -77,7 +109,7 @@ export default function Header({ lang, setLang }: HeaderProps) {
               href={authLink}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2"
             >
-              <User className="w-4 h-4" />
+              <AuthIcon className="w-4 h-4" />
               {authText}
             </Link>
           </div>
@@ -100,13 +132,13 @@ export default function Header({ lang, setLang }: HeaderProps) {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100 p-4 absolute w-full shadow-xl">
+        <div className="md:hidden bg-white border-t border-slate-100 p-4 absolute w-full shadow-xl animate-in slide-in-from-top-2">
           <Link
             href={authLink}
-            className="w-full bg-emerald-600 text-white px-4 py-3 rounded-xl font-medium flex justify-center items-center gap-2"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-medium flex justify-center items-center gap-2 shadow-sm transition-colors"
             onClick={() => setMobileMenuOpen(false)}
           >
-            <User className="w-5 h-5" />
+            <AuthIcon className="w-5 h-5" />
             {authText}
           </Link>
         </div>

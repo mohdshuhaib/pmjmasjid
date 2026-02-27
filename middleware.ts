@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
         },
@@ -20,23 +20,43 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const url = request.nextUrl.clone()
+  const path = url.pathname
 
-  // 1. Protect Admin Routes
-  if (request.nextUrl.pathname.startsWith('/admin') && !request.nextUrl.pathname.includes('/login')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
-    // Fetch role from users table
+  // Check the role once if the user is logged in to save database calls
+  let isAdmin = false;
+  if (user) {
     const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    if (userData?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url)) // Kick non-admins out
+    isAdmin = userData?.role === 'admin';
+  }
+
+  // 1. IF ALREADY LOGGED IN: Prevent access to ANY login page
+  if (user && (path === '/login' || path === '/admin/login')) {
+    url.pathname = isAdmin ? '/admin/dashboard' : '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  // 2. PROTECT ADMIN ROUTES
+  if (path.startsWith('/admin') && !path.includes('/login')) {
+    if (!user) {
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+    if (!isAdmin) {
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
     }
   }
 
-  // 2. Protect Member Routes
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+  // 3. PROTECT MEMBER ROUTES
+  if (path.startsWith('/dashboard')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    if (isAdmin) {
+      url.pathname = '/admin/dashboard'
+      return NextResponse.redirect(url)
     }
   }
 
@@ -44,5 +64,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // Ignored paths: static files, images, favicon, service worker, and PWA manifest
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|firebase-messaging-sw.js|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
