@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
   const notificationOptions = {
     body: payload.notification?.body,
     icon: '/icon-192x192.png', // Make sure you have an icon here!
-    badge: '/icon-192x192.png', // Replaced with icon, as usually standard badges are pure white/transparent.
+    badge: '/badge-96x96.png', // Replaced with icon, as usually standard badges are pure white/transparent.
     data: {
       // Pass the specific URL we want to open when this is clicked
       url: '/notifications',
