@@ -16,13 +16,13 @@ export async function GET(request: Request) {
   let type = '';
 
   // Check if today is December 28th
-  if (month === 12 && date === 28) {
+  if (month === 3 && date === 4) {
     type = 'annual';
   }
   // Check if today is the 1st of March, June, September, or December
-  else if (date === 1 && [3, 6, 9, 12].includes(month)) {
-    type = 'arrears';
-  }
+  // else if (date === 1 && [3, 6, 9, 12].includes(month)) {
+  //   type = 'arrears';
+  // }
   // If it is any other day of the year, exit quietly!
   else {
     return NextResponse.json({
