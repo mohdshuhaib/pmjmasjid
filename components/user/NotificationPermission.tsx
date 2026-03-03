@@ -25,44 +25,96 @@ export default function NotificationPermission({ pmj_no }: NotificationPermissio
   const handleEnableNotifications = async () => {
     setLoading(true);
     try {
+      console.log("1. Starting notification setup...");
       const messaging = await getFirebaseMessaging();
 
       if (!messaging) {
+        console.error("Messaging module not returned from getFirebaseMessaging");
         alert("Push notifications are not supported on this browser/device.");
         setPermission("unsupported");
         setLoading(false);
         return;
       }
 
-      // Request Permission from the user
+      console.log("2. Requesting notification permission...");
       const currentPermission = await Notification.requestPermission();
+      console.log("Permission result:", currentPermission);
       setPermission(currentPermission);
 
       if (currentPermission === "granted") {
-        // Generate FCM Token (Replace with your actual VAPID key from Firebase Console)
-        const token = await getToken(messaging, {
-          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-        });
+        console.log("3. Permission granted. Attempting explicit SW registration...");
 
-        if (token) {
-          // Send the token to our API route to store in Supabase
-          const response = await fetch("/api/notifications/register-token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              pmj_no: pmj_no,
-              token: token,
-              device_type: navigator.userAgent.includes("Mobile") ? "mobile" : "desktop"
-            }),
-          });
+        // Let's try to explicitly register the SW first, waiting for it to be ready
+        let swRegistration = null;
+        if ('serviceWorker' in navigator) {
+          try {
+            swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('SW Registered:', swRegistration);
 
-          if (!response.ok) {
-            console.error("Failed to save token to database");
+            // Wait until the SW is active
+            swRegistration = await navigator.serviceWorker.ready;
+            console.log('SW is Ready:', swRegistration);
+
+          } catch (swError) {
+            console.error("Failed to register SW explicitly:", swError);
           }
         }
+
+        console.log("4. Attempting to get FCM token...");
+        // Pass the explicit service worker registration to getToken
+        // Add these two lines temporarily:
+        console.log("API Key exists?:", !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+        console.log("VAPID Key exists?:", !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY);
+        const tokenParams: { vapidKey: string | undefined, serviceWorkerRegistration?: ServiceWorkerRegistration } = {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+        };
+
+        if (swRegistration) {
+          tokenParams.serviceWorkerRegistration = swRegistration;
+        }
+
+        try {
+          const token = await getToken(messaging, tokenParams);
+
+          console.log("5. Token retrieved:", token ? "Success (hidden for security)" : "Null returned");
+
+          if (token) {
+            const response = await fetch("/api/notifications/register-token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                pmj_no: pmj_no,
+                token: token,
+                device_type: navigator.userAgent.includes("Mobile") ? "mobile" : "desktop"
+              }),
+            });
+
+            if (!response.ok) {
+              console.error("6. Failed to save token to database. Status:", response.status);
+            } else {
+              console.log("6. Token successfully saved to database.");
+            }
+          } else {
+            console.warn("Token generation returned null without throwing an error.");
+            alert("Could not generate a notification token. Please try again.");
+          }
+        } catch (tokenError: any) {
+          console.error("Error specifically during getToken():", tokenError);
+
+          // Check for common specific errors
+          if (tokenError.code === 'messaging/invalid-vapid-key') {
+            alert("Configuration Error: The VAPID key is invalid.");
+          } else if (tokenError.code === 'messaging/permission-blocked') {
+            alert("Notifications are blocked by the browser.");
+          } else {
+            alert(`Token generation failed: ${tokenError.message}`);
+          }
+        }
+      } else {
+        console.log("Permission was not granted.");
       }
     } catch (error) {
-      console.error("Error setting up notifications:", error);
+      console.error("General error setting up notifications:", error);
       alert("Something went wrong while setting up notifications.");
     } finally {
       setLoading(false);
