@@ -17,17 +17,20 @@ const anekMalayalam = Anek_Malayalam({
   display: "swap",
 });
 
+// 2. Viewport Configuration
 export const viewport: Viewport = {
-  themeColor: "#047857", // Example: Emerald Green (changes the phone's top status bar color)
+  themeColor: "#047857",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // Prevents weird zooming on mobile inputs
+  maximumScale: 1,
 };
 
+// 3. Upgraded Metadata (SEO, WhatsApp, and PWA)
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pmjmasjid.vercel.app"), // <-- THIS FIXES WHATSAPP!
   title: "PMJ Masjid - Perunguzhi",
   description: "Official web portal for Perunguzhi Muslim Jamath Masjid. Access member dashboards, notifications, and varshika vari details.",
-  manifest: "/manifest.json", // Tells Android this is an installable app
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -40,13 +43,13 @@ export const metadata: Metadata = {
     siteName: "PMJ Masjid",
     images: [
       {
-        url: "/icon-512x512.png", // Your main high-res logo
+        url: "/web-app-manifest-512x512.png", // Using the icon we know is in your public folder
         width: 512,
         height: 512,
         alt: "PMJ Masjid Logo",
       },
     ],
-    locale: "en_US", // You can change to ml_IN if the primary UI is Malayalam
+    locale: "en_US",
     type: "website",
   },
 };
@@ -60,9 +63,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${anekMalayalam.variable} antialiased min-h-screen bg-gray-50`}>
         <Toaster position="top-center" />
-        {/* Hidden component to listen for Firebase messages while app is open */}
         <ForegroundFCMListener />
-        {/* The main page content */}
         <main>
           {children}
         </main>
