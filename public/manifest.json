@@ -1,6 +1,7 @@
 {
-  "name": "PMJ - MASJID",
-  "short_name": "PMJ",
+  "name": "PMJ Masjid - Perunguzhi",
+  "short_name": "PMJ Masjid",
+  "description": "Official web portal for Perunguzhi Muslim Jamath Masjid.",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -15,7 +16,9 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  "theme_color": "#047857",
+  "background_color": "#f9fafb",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/dashboard"
 }
