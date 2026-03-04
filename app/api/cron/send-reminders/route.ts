@@ -88,9 +88,14 @@ export async function GET(request: Request) {
     // 6. Initialize Firebase
     const admin = await import('firebase-admin');
     if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!))
-      });
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+              const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
+              const serviceAccount = JSON.parse(buffer.toString('utf8'));
+
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+              });
+            }
     }
 
     // 7. Construct Personalized Messages for families that owe money
