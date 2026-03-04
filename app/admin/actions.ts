@@ -307,14 +307,14 @@ export async function addPaymentAction(paymentData: any) {
               const serviceAccountPath = path.join(process.cwd(), 'firebase-admin.json');
 
               if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-              console.log("🚀 TESTING PROD MODE: Decoding Base64 string!"); // <-- ADD THIS
-              const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
-              const serviceAccount = JSON.parse(buffer.toString('utf8'));
+                console.log("🚀 TESTING PROD MODE: Decoding Base64 string!"); // <-- ADD THIS
+                const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
+                const serviceAccount = JSON.parse(buffer.toString('utf8'));
 
-              admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-              });
-            }
+                admin.initializeApp({
+                  credential: admin.credential.cert(serviceAccount)
+                });
+              }
             }
           }
 
@@ -322,8 +322,8 @@ export async function addPaymentAction(paymentData: any) {
           await admin.messaging().sendEachForMulticast({
             tokens,
             notification: {
-              title: 'Payment Receipt',
-              body: `Jazakallah Khair! We received ₹${paymentData.amount} for ${paymentData.purpose}. Bill No: ${paymentData.bill_no}`
+              title: 'Payment Received',
+              body: `ജസാകള്ളാഹു ഖൈറൻ. ${paymentData.purpose} ആവശ്യത്തിനായി ₹${paymentData.amount} വിജയകരമായി ലഭിച്ചിട്ടുണ്ട്. ബിൽ നമ്പർ: ${paymentData.bill_no}. അല്ലാഹു നിങ്ങളുടെ സഹകരണം സ്വീകരിക്കുമാറാകട്ടെ.`
             },
             data: { url: '/notifications' }
           });
