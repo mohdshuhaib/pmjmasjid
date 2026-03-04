@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image"; // 1. Added Next.js Image component
 import { Menu, X, Globe, User, ShieldCheck } from "lucide-react";
 import { TRANSLATIONS, Language } from "@/lib/translations";
-import { MoonIcon } from "@/components/MoonIcon";
 import { supabase } from "@/lib/supabase";
 
 interface HeaderProps {
@@ -74,9 +74,15 @@ export default function Header({ lang, setLang }: HeaderProps) {
 
           {/* Logo area wrapped in Link */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-              <MoonIcon className="text-white w-7 h-7" />
-            </div>
+            {/* Increased size: width/height to 64, and w-16 h-16 classes */}
+            <Image
+              src="/logo.png"
+              alt="PMJ Masjid Logo"
+              width={64}
+              height={64}
+              className="w-16 h-16 rounded-2xl object-cover group-hover:scale-105 transition-transform"
+              priority
+            />
             <div className="flex flex-col">
               <span className="font-bold text-xl text-slate-800 leading-tight group-hover:text-emerald-700 transition-colors">
                 {t.masjidName}

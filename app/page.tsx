@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image"; // 1. Added Next.js Image component
 import { MapPin, Phone, Heart, User, ArrowRight } from "lucide-react";
 import { TRANSLATIONS, Language } from "@/lib/translations";
-import { MoonIcon } from "@/components/MoonIcon";
+// Removed MoonIcon import
 import Header from "@/components/Header";
 import HeroCountdown from "@/components/HeroCountdown";
 import PrayerTimes from "@/components/PrayerTimes";
@@ -44,7 +45,15 @@ export default function Home() {
             <div className="space-y-8">
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                   <MoonIcon className="text-emerald-500 w-6 h-6" /> {t.masjidName}
+                  {/* 2. Replaced MoonIcon with your actual logo */}
+                  <Image
+                    src="/logo.png"
+                    alt="PMJ Masjid Logo"
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  {t.masjidName}
                 </h3>
                 <p className="text-slate-400">{t.subtitle}</p>
               </div>
@@ -79,7 +88,7 @@ export default function Home() {
             {/* Map Column */}
             <div className="w-full h-64 lg:h-full min-h-[300px] rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1606.5350263966393!2d76.81422194274934!3d8.631811123646973!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b05ea99cf3770ad%3A0xd786ad5de15274f1!2sPerunguzhi%20Juma%20Masjid!5e0!3m2!1sen!2sin!4v1771643098036!5m2!1sen!2sin"
+                src="https://maps.google.com/maps?q=8.631732,76.808162&t=&z=16&ie=UTF8&iwloc=&output=embed"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}
@@ -92,7 +101,7 @@ export default function Home() {
           </div>
 
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
-            <p>&copy; {new Date().getFullYear()} {t.masjidName}. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {t.masjidName}. All rights reserved.</p>
             <p className="flex items-center gap-1.5">
               {t.madeWith} <Heart className="w-4 h-4 text-red-500 fill-red-500" /> {t.by}
             </p>

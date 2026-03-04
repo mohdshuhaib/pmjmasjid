@@ -1,17 +1,9 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image"; // 1. Added Next.js Image component
 import { LogOut, Bell } from "lucide-react";
 
-// Inline Moon Icon for the Header
-function MoonIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-      <path d="M19 3v4" />
-      <path d="M21 5h-4" />
-    </svg>
-  );
-}
+// 2. Removed the inline MoonIcon function
 
 interface HeaderProps {
   logoutAction: () => void;
@@ -24,11 +16,19 @@ export default function Header({ logoutAction, unreadCount = 0 }: HeaderProps) {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
-          <div className="flex items-center gap-3">
-            <MoonIcon className="w-6 h-6 text-emerald-300" />
-            <span className="font-bold text-lg tracking-wide hidden sm:block">PMJ Masjid Portal</span>
-            <span className="font-bold text-lg tracking-wide sm:hidden">PMJ</span>
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-3">
+            {/* Increased from 32px to 48px (w-12 h-12) */}
+            <Image
+              src="/logo.png"
+              alt="PMJ Masjid Logo"
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-full object-cover shadow-sm"
+              priority
+            />
+            <span className="font-bold text-xl tracking-wide hidden sm:block">PMJ Masjid Portal</span>
+            <span className="font-bold text-xl tracking-wide sm:hidden">PMJ</span>
+          </Link>
 
           <div className="flex items-center gap-4 sm:gap-6">
             {/* Notification Bell with Badge */}
