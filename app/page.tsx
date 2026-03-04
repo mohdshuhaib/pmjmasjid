@@ -72,7 +72,8 @@ export default function Home() {
                   <Phone className="w-5 h-5 text-emerald-500 shrink-0" />
                   <div>
                     <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">{t.imamContact}</p>
-                    <p className="text-white text-lg">+91 94970 07113</p>
+                    <p className="text-white text-sm">Usthad Rafi Baqavi</p>
+                    <p className="text-white text-sm">+91 94970 07113</p>
                   </div>
                 </div>
               </div>

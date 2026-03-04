@@ -1,7 +1,8 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
-// import path from 'path';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 // Initialize Admin Client (Requires SUPABASE_SERVICE_ROLE_KEY in .env.local)
 // Bypasses RLS so admins can create auth accounts
@@ -348,4 +349,61 @@ export async function markPaymentAsReadAction(paymentId: string) {
 
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+export async function executeYearlyRolloverAction(password: string) {
+  try {
+    // FIX: Await cookies() because it is asynchronous in Next.js 15
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return cookieStore.get(name)?.value; },
+        },
+      }
+    );
+
+    // 1. Get current logged in admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !user.email) return { success: false, error: "Unauthorized access." };
+
+    // 2. VERIFY PASSWORD - Re-authenticate to ensure they are the real admin
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: password
+    });
+
+    if (authError) {
+      return { success: false, error: "Incorrect password. Rollover aborted." };
+    }
+
+    // 3. Trigger the Financial Rollover
+    const { error: rpcError } = await supabaseAdmin.rpc('process_yearly_rollover', {
+      head_amount: 1250,
+      dependent_amount: 200
+    });
+
+    if (rpcError) throw rpcError;
+
+    // 4. Log the SUCCESS
+    await supabaseAdmin.from('logs').insert({
+      event_type: 'YEARLY_ROLLOVER',
+      status: 'SUCCESS',
+      message: 'Manual yearly financial rollover completed successfully.'
+    });
+
+    return { success: true };
+
+  } catch (err: any) {
+    console.error("Manual Rollover Error:", err);
+    // Log the ERROR
+    await supabaseAdmin.from('logs').insert({
+      event_type: 'YEARLY_ROLLOVER',
+      status: 'ERROR',
+      message: `Manual rollover failed: ${err.message}`
+    });
+    return { success: false, error: err.message };
+  }
 }

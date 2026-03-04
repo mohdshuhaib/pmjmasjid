@@ -8,21 +8,21 @@ export async function GET(request: Request) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  // 2. The Daily Date Check (UTC Time) - Replaces Vercel's URL parameters
+  // 2. The Daily Date Check (UTC Time)
   const today = new Date();
   const month = today.getUTCMonth() + 1; // JavaScript months are 0-11
   const date = today.getUTCDate();
 
   let type = '';
 
-  // Check if today is December 28th
-  if (month === 3 && date === 4) {
+  // Check if today is December 28th (Annual Reminder)
+  if (month === 12 && date === 28) {
     type = 'annual';
   }
-  // Check if today is the 1st of March, June, September, or December
-  // else if (date === 1 && [3, 6, 9, 12].includes(month)) {
-  //   type = 'arrears';
-  // }
+  // Check if today is Jan 1st, Apr 1st, Jul 1st, or Oct 1st (Arrears Reminder)
+  else if (date === 1 && [1, 4, 7, 10].includes(month)) {
+    type = 'arrears';
+  }
   // If it is any other day of the year, exit quietly!
   else {
     return NextResponse.json({
@@ -39,14 +39,14 @@ export async function GET(request: Request) {
   try {
     const targetColumn = type === 'annual' ? 'annual_subs' : 'arrears';
 
-    // 3. Fetch all active device tokens first
+    // 3. Fetch all active device tokens
     const { data: tokensData, error: tokenError } = await supabaseAdmin
       .from('device_tokens')
       .select('pmj_no, token');
 
     if (tokenError) throw tokenError;
     if (!tokensData || tokensData.length === 0) {
-      return NextResponse.json({ success: true, message: 'No devices registered in the database.' });
+      return NextResponse.json({ success: true, message: 'No devices registered.' });
     }
 
     // Group the tokens by Family PMJ No
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       families[t.pmj_no].tokens.push(t.token);
     });
 
-    // 4. Fetch ALL Active Members (Heads AND Dependents)
+    // 4. Fetch ALL Active Members
     const { data: members, error: membersError } = await supabaseAdmin
       .from('members')
       .select(`pmj_no, head_pmj_no, name, ${targetColumn}`)
@@ -66,49 +66,37 @@ export async function GET(request: Request) {
 
     // 5. Calculate TOTAL Dues for each Family
     members.forEach(m => {
-      // Find which family they belong to
       const pmj = m.pmj_no || m.head_pmj_no;
-
-      // If they are orphaned or their family hasn't enabled notifications, skip them to save memory
       if (!pmj || !families[pmj]) return;
 
-      // Safely parse the amount (Ignoring "NA" and "0")
       const rawAmount = (m as Record<string, any>)[targetColumn];
       const amount = (rawAmount && rawAmount.toUpperCase() !== 'NA') ? (parseFloat(rawAmount) || 0) : 0;
 
-      // Add their dues to the family total
       families[pmj].totalAmount += amount;
-
-      // If this specific member has a PMJ No, they are the Head. Let's use their actual name for the message.
-      if (m.pmj_no) {
-        families[pmj].headName = m.name;
-      }
+      if (m.pmj_no) families[pmj].headName = m.name;
     });
 
     // 6. Initialize Firebase
     const admin = await import('firebase-admin');
     if (!admin.apps.length) {
       if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-              const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
-              const serviceAccount = JSON.parse(buffer.toString('utf8'));
+        const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
+        const serviceAccount = JSON.parse(buffer.toString('utf8'));
 
-              admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-              });
-            }
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+      }
     }
 
-    // 7. Construct Personalized Messages for families that owe money
+    // 7. Construct Personalized Messages
     const messages: any[] = [];
     Object.keys(families).forEach(pmjKey => {
       const fam = families[Number(pmjKey)];
-
-      // Only send if the total family debt is greater than 0
       if (fam.totalAmount > 0 && fam.tokens.length > 0) {
-        const title = type === 'annual' ? 'Annual Subscription Due' : 'Pending Arrears Reminder';
-        const body = `Asalamu Alaikum ${fam.headName}, this is a gentle reminder that your total family ${type === 'annual' ? 'annual subscription' : 'arrears'} is ₹${fam.totalAmount}. Please arrange to clear this soon. Jazakallah Khair.`;
+        const title = type === 'annual' ? 'വാർഷിക വരി അറിയിപ്പ്' : 'കുടിശ്ശിക ഓർമ്മപ്പെടുത്തൽ';
+        const body = `അസ്സലാമു അലൈക്കും ${fam.headName}, നിങ്ങളുടെ കുടുംബത്തിന്റെ ${type === 'annual' ? 'വാർഷിക വരി' : 'കുടിശ്ശിക'} ₹${fam.totalAmount}. അടയ്ക്കാനുള്ളത് ബാക്കിയുണ്ട്. ദയവായി വേഗത്തിൽ തീർപ്പാക്കണമെന്ന് വിനീതമായി അഭ്യർത്ഥിക്കുന്നു. ജസാകല്ലാഹു ഖൈറൻ.`;
 
-        // Create a message payload for every device this family owns
         fam.tokens.forEach(token => {
           messages.push({
             token,
@@ -119,9 +107,7 @@ export async function GET(request: Request) {
       }
     });
 
-    if (messages.length === 0) {
-      return NextResponse.json({ success: true, message: 'No pending dues found for registered devices.' });
-    }
+    if (messages.length === 0) return NextResponse.json({ success: true, message: 'No pending dues found.' });
 
     // 8. Send in batches of 500
     const deadTokens: string[] = [];
@@ -131,7 +117,6 @@ export async function GET(request: Request) {
       const chunk = messages.slice(i, i + CHUNK_SIZE);
       const response = await admin.messaging().sendEach(chunk);
 
-      // 9. Identify dead tokens
       response.responses.forEach((resp, index) => {
         if (!resp.success) {
           const errorCode = resp.error?.code;
@@ -142,34 +127,27 @@ export async function GET(request: Request) {
       });
     }
 
-    // 10. Cleanup dead tokens
+    // 9. Cleanup dead tokens
     if (deadTokens.length > 0) {
       await supabaseAdmin.from('device_tokens').delete().in('token', deadTokens);
     }
 
-    // 11. Log the success in your database
+    // 10. Log the success
     await supabaseAdmin.from('logs').insert({
       event_type: `AUTOMATED_REMINDER_${type.toUpperCase()}`,
       status: 'SUCCESS',
       message: `Sent ${messages.length} ${type} reminders. Cleaned up ${deadTokens.length} dead tokens.`
     });
 
-    return NextResponse.json({
-      success: true,
-      sent: messages.length,
-      message: `Successfully sent ${type} reminders.`
-    });
+    return NextResponse.json({ success: true, sent: messages.length });
 
   } catch (error: any) {
     console.error('Reminder Cron Error:', error);
-
-    // Log the error
     await supabaseAdmin.from('logs').insert({
       event_type: `AUTOMATED_REMINDER_${type?.toUpperCase() || 'UNKNOWN'}`,
       status: 'ERROR',
       message: `Failed to send reminders: ${error.message}`
     });
-
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

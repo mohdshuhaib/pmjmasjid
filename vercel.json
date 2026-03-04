@@ -1,12 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/yearly-rollover",
-      "schedule": "0 0 4 3 *"
-    },
-    {
       "path": "/api/cron/send-reminders",
-      "schedule": "45 5 4 3 *"
+      "schedule": "30 10 * * *"
     }
   ]
 }
