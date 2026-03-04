@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import path from 'path';
 
 // Initialize Admin Client (Requires SUPABASE_SERVICE_ROLE_KEY in .env.local)
 // Bypasses RLS so admins can create auth accounts
@@ -290,8 +291,14 @@ export async function addPaymentAction(paymentData: any) {
         try {
           const admin = await import('firebase-admin');
           if (!admin.apps.length) {
+
+            // 1. Get the absolute path to the JSON file at the root of your project
+            const serviceAccountPath = path.join(process.cwd(), 'firebase-admin.json');
+
+            // 2. Pass the file path directly to cert()
+            // Firebase will automatically read, parse, and handle the PEM formatting perfectly.
             admin.initializeApp({
-              credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!))
+              credential: admin.credential.cert(serviceAccountPath)
             });
           }
 
