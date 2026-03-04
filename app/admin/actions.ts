@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
-import path from 'path';
+// import path from 'path';
 
 // Initialize Admin Client (Requires SUPABASE_SERVICE_ROLE_KEY in .env.local)
 // Bypasses RLS so admins can create auth accounts
@@ -292,27 +292,29 @@ export async function addPaymentAction(paymentData: any) {
           const admin = await import('firebase-admin');
           if (!admin.apps.length) {
 
-            // Check if we have production environment variables
-            if (process.env.FIREBASE_PRIVATE_KEY) {
-              // --- PRODUCTION MODE ---
-              // Safely handle newlines just in case the server escapes them
-              const formattedKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+            // 1. Check for the Base64 variable (Production)
+            if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+              const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
+              const serviceAccount = JSON.parse(buffer.toString('utf8'));
 
               admin.initializeApp({
-                credential: admin.credential.cert({
-                  projectId: process.env.FIREBASE_PROJECT_ID,
-                  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                  privateKey: formattedKey
-                })
+                credential: admin.credential.cert(serviceAccount)
               });
-            } else {
-              // --- LOCAL DEVELOPMENT MODE ---
+            }
+            // 2. Fallback to the local file (Local Development)
+            else {
               const path = await import('path');
               const serviceAccountPath = path.join(process.cwd(), 'firebase-admin.json');
 
+              if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+              console.log("🚀 TESTING PROD MODE: Decoding Base64 string!"); // <-- ADD THIS
+              const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
+              const serviceAccount = JSON.parse(buffer.toString('utf8'));
+
               admin.initializeApp({
-                credential: admin.credential.cert(serviceAccountPath)
+                credential: admin.credential.cert(serviceAccount)
               });
+            }
             }
           }
 
