@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Settings, Users, Shield, Plus, Edit, Trash2,
-  Save, X, CheckCircle2, AlertCircle, DatabaseBackup
+  Save, X, CheckCircle2, AlertCircle, DatabaseBackup, AlertTriangle, Loader2
 } from "lucide-react";
 import { createBrowserClient } from '@supabase/ssr';
 import YearlyRollover from "@/components/admin/YearlyRollover";
@@ -33,6 +33,10 @@ export default function SettingsPage() {
   const [currentMember, setCurrentMember] = useState<Partial<CommitteeMember>>({
     name: "", role_key: "", contact_number: "", display_order: 0
   });
+
+  // Delete Modal State
+  const [memberToDelete, setMemberToDelete] = useState<CommitteeMember | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // --- PASSWORD STATE ---
   const [passwords, setPasswords] = useState({ newPassword: "", confirmPassword: "" });
@@ -83,11 +87,21 @@ export default function SettingsPage() {
     fetchMembers();
   };
 
-  const handleDeleteMember = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this committee member?")) return;
-    const { error } = await supabase.from('committee_members').delete().eq('id', id);
-    if (error) showMessage('error', error.message);
-    else { showMessage('success', 'Member removed successfully.'); fetchMembers(); }
+  const confirmDeleteMember = async () => {
+    if (!memberToDelete) return;
+    setDeleteLoading(true);
+
+    const { error } = await supabase.from('committee_members').delete().eq('id', memberToDelete.id);
+
+    if (error) {
+      showMessage('error', error.message);
+    } else {
+      showMessage('success', 'Member removed successfully.');
+      fetchMembers();
+    }
+
+    setDeleteLoading(false);
+    setMemberToDelete(null);
   };
 
   const startEdit = (member: CommitteeMember) => { setCurrentMember(member); setIsEditing(true); };
@@ -175,7 +189,8 @@ export default function SettingsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button onClick={() => startEdit(member)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteMember(member.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        {/* TRASH BUTTON TRIGGERS MODAL NOW */}
+                        <button onClick={() => setMemberToDelete(member)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </div>
                   ))
@@ -242,6 +257,38 @@ export default function SettingsPage() {
       {/* --- TAB CONTENT: YEARLY ROLLOVER --- */}
       {activeTab === "rollover" && (
         <YearlyRollover />
+      )}
+
+      {/* --- DELETE CONFIRMATION MODAL --- */}
+      {memberToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Delete Member?</h2>
+            <p className="text-slate-500 text-sm mb-6">
+              Are you sure you want to remove <strong>{memberToDelete.name}</strong> from the committee? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMemberToDelete(null)}
+                disabled={deleteLoading}
+                className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteMember}
+                disabled={deleteLoading}
+                className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+              >
+                {deleteLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

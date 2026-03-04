@@ -260,11 +260,81 @@ export async function deleteNoticeAction(id: string) {
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
-
-// 7. Add Payment & Send Push Notification
+// 7. Add Payment, Update Subscriptions, & Send Push Notification
 export async function addPaymentAction(paymentData: any) {
   try {
-    // 1. Save to Database
+    // --- NEW LOGIC: VERIFY AND SUBTRACT FUND ---
+    if (paymentData.purpose === "വാർഷിക വരി" && paymentData.member_id) {
+      // Fetch the exact member's current dues
+      const { data: member, error: memberError } = await supabaseAdmin
+        .from('members')
+        .select('annual_subs, arrears, name')
+        .eq('id', paymentData.member_id)
+        .single();
+
+      if (memberError) throw new Error("Could not fetch member details.");
+
+      const parseDue = (val: string | null) => (val && val.toUpperCase() !== 'NA') ? parseFloat(val) : 0;
+      const arrearsNum = parseDue(member.arrears);
+      const annualNum = parseDue(member.annual_subs);
+      const totalDue = arrearsNum + annualNum;
+      const paidAmount = parseFloat(paymentData.amount);
+
+      // Check 1: Do they owe nothing?
+      if (totalDue === 0) {
+        return {
+          success: false,
+          isDueError: true,
+          error: `There is no "വാർഷിക വരി" or "കുടിശ്ശിക" pending for ${member.name}.`
+        };
+      }
+
+      // Check 2: Are they trying to overpay?
+      if (paidAmount > totalDue) {
+        return {
+          success: false,
+          isDueError: true,
+          error: `Payment Cancelled! ${member.name} only owes ₹${totalDue} in total (Arrears: ₹${arrearsNum}, Annual: ₹${annualNum}). Cannot accept ₹${paidAmount}.`
+        };
+      }
+
+      // Calculate Deductions
+      let remainingPayment = paidAmount;
+      let newArrears = arrearsNum;
+      let newAnnual = annualNum;
+
+      // 1. Deduct from Arrears first
+      if (newArrears > 0) {
+        const deduct = Math.min(newArrears, remainingPayment);
+        newArrears -= deduct;
+        remainingPayment -= deduct;
+      }
+
+      // 2. Deduct remaining from Annual Subs
+      if (remainingPayment > 0 && newAnnual > 0) {
+        const deduct = Math.min(newAnnual, remainingPayment);
+        newAnnual -= deduct;
+        remainingPayment -= deduct;
+      }
+
+      const formatDue = (original: string | null, newVal: number) => {
+        if (original?.toUpperCase() === 'NA' && newVal === 0) return 'NA';
+        return newVal.toString();
+      };
+
+      // 3. Update the Member's Profile in Supabase
+      const { error: updateError } = await supabaseAdmin
+        .from('members')
+        .update({
+          arrears: formatDue(member.arrears, newArrears),
+          annual_subs: formatDue(member.annual_subs, newAnnual)
+        })
+        .eq('id', paymentData.member_id);
+
+      if (updateError) throw new Error("Failed to update member's fund balance.");
+    }
+
+    // --- CONTINUE WITH NORMAL PAYMENT SAVING ---
     const { data: payment, error: dbError } = await supabaseAdmin
       .from('payments')
       .insert([{
@@ -286,40 +356,25 @@ export async function addPaymentAction(paymentData: any) {
       throw new Error(`Database Error: ${dbError.message}`);
     }
 
-    // 2. Send Push Notification (ONLY if they are a registered family - has pmj_no)
+    // Send Push Notification
     if (paymentData.pmj_no) {
-      const { data: tokensData } = await supabaseAdmin
-        .from('device_tokens')
-        .select('token')
-        .eq('pmj_no', paymentData.pmj_no);
+      const { data: tokensData } = await supabaseAdmin.from('device_tokens').select('token').eq('pmj_no', paymentData.pmj_no);
 
       if (tokensData && tokensData.length > 0) {
         try {
           const admin = await import('firebase-admin');
           if (!admin.apps.length) {
-
-            // 1. Check for the Base64 variable (Production)
             if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
               const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
               const serviceAccount = JSON.parse(buffer.toString('utf8'));
-
-              admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-              });
-            }
-            // 2. Fallback to the local file (Local Development)
-            else {
+              admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+            } else {
               const path = await import('path');
               const serviceAccountPath = path.join(process.cwd(), 'firebase-admin.json');
-
               if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
-                console.log("🚀 TESTING PROD MODE: Decoding Base64 string!"); // <-- ADD THIS
                 const buffer = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, 'base64');
                 const serviceAccount = JSON.parse(buffer.toString('utf8'));
-
-                admin.initializeApp({
-                  credential: admin.credential.cert(serviceAccount)
-                });
+                admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
               }
             }
           }
@@ -409,6 +464,22 @@ export async function executeYearlyRolloverAction(password: string) {
       status: 'ERROR',
       message: `Manual rollover failed: ${err.message}`
     });
+    return { success: false, error: err.message };
+  }
+}
+
+// 9. Bulk Delete Payments by Date Range
+export async function deletePaymentsByDateRangeAction(fromDate: string, toDate: string) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('payments')
+      .delete()
+      .gte('payment_date', fromDate)
+      .lte('payment_date', toDate);
+
+    if (error) throw new Error(`Delete Error: ${error.message}`);
+    return { success: true };
+  } catch (err: any) {
     return { success: false, error: err.message };
   }
 }

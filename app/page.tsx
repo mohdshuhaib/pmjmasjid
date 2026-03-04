@@ -89,7 +89,7 @@ export default function Home() {
             {/* Map Column */}
             <div className="w-full h-64 lg:h-full min-h-[300px] rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
               <iframe
-                src="https://maps.google.com/maps?q=8.631732,76.808162&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=8.631893944994628,76.81538546473199&t=&z=16&ie=UTF8&iwloc=&output=embed"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

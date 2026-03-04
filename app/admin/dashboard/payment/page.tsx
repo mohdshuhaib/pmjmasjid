@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Receipt, Search, PlusCircle, Filter, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Receipt, Search, PlusCircle, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import { addPaymentAction } from "@/app/admin/actions";
+import RecentPayments from "@/components/admin/RecentPayments";
 
 interface Member {
   id: string;
@@ -21,6 +22,9 @@ export default function PaymentDashboard() {
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // New Due Alert Modal State
+  const [dueAlert, setDueAlert] = useState<{ isOpen: boolean, title: string, message: string } | null>(null);
 
   // Form States
   const [billNo, setBillNo] = useState("");
@@ -56,7 +60,8 @@ export default function PaymentDashboard() {
   };
 
   const fetchPayments = async () => {
-    const { data } = await supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(100);
+    setLoadingPayments(true);
+    const { data } = await supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(200);
     if (data) setPayments(data);
     setLoadingPayments(false);
   };
@@ -111,7 +116,11 @@ export default function PaymentDashboard() {
       setBillNo(""); setAmount(""); setMemberSearch(""); setSelectedMember(null); setCustomName(""); setIsCustomMember(false);
       fetchPayments(); // Refresh table
     } else {
-      setMessage({ type: 'error', text: result.error });
+      if (result.isDueError) {
+        setDueAlert({ isOpen: true, title: "Payment Cancelled", message: result.error || "Unknown error." });
+      } else {
+        setMessage({ type: 'error', text: result.error });
+      }
     }
     setSubmitting(false);
   };
@@ -241,55 +250,31 @@ export default function PaymentDashboard() {
         </form>
       </div>
 
-      {/* --- PAYMENTS TABLE --- */}
-      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden mt-8">
-        <div className="p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Filter className="w-5 h-5 text-slate-500" /> Recent Transactions
-          </h2>
-        </div>
+      {/* --- EXTRACTED RECENT PAYMENTS COMPONENT --- */}
+      <RecentPayments
+        payments={payments}
+        loading={loadingPayments}
+        onRefresh={fetchPayments}
+      />
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse whitespace-nowrap">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">SL</th>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">Date</th>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">Bill No</th>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">PMJ / MR</th>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">Name</th>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">Amount / Mode</th>
-                <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider">Purpose</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loadingPayments ? (
-                <tr><td colSpan={7} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-emerald-500 mx-auto" /></td></tr>
-              ) : payments.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-slate-400">No payments recorded yet.</td></tr>
-              ) : (
-                payments.map((p, i) => (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="p-4 text-slate-500 text-sm">{i + 1}</td>
-                    <td className="p-4 font-mono text-slate-600">{new Date(p.payment_date).toLocaleDateString('en-IN')}</td>
-                    <td className="p-4 font-bold text-slate-800">#{p.bill_no}</td>
-                    <td className="p-4 font-mono text-xs text-slate-500">
-                      {p.pmj_no ? `PMJ: ${p.pmj_no}` : 'Non-Member'}<br/>
-                      {p.mr_no && `MR: ${p.mr_no}`}
-                    </td>
-                    <td className="p-4 font-bold text-slate-700">{p.payer_name}</td>
-                    <td className="p-4">
-                      <div className="font-bold text-emerald-700">₹ {p.amount}</div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{p.payment_mode}</div>
-                    </td>
-                    <td className="p-4 text-sm text-slate-600">{p.purpose}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* --- DUE BALANCE ERROR MODAL --- */}
+      {dueAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 text-center animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">{dueAlert.title}</h2>
+            <p className="text-slate-600 mb-6 leading-relaxed">{dueAlert.message}</p>
+            <button
+              onClick={() => setDueAlert(null)}
+              className="w-full py-3 bg-slate-100 text-slate-800 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              Understood
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );

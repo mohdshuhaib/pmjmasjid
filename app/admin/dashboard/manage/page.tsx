@@ -208,11 +208,11 @@ export default function ManageMembers() {
             <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center flex flex-col items-center">
               <UploadCloud className="w-12 h-12 text-slate-400 mb-4" />
               <p className="text-slate-600 mb-4 max-w-lg">
-                Ensure your CSV file matches exactly this 11-column order. Enclose addresses with commas inside double quotes (e.g. <code className="text-slate-800 bg-slate-200 px-1">"123 St, Kerala"</code>).
+                Ensure your CSV file matches exactly this 11-column order. Enclose addresses with commas inside double quotes (e.g. <code className="text-slate-800 bg-slate-200 px-1">"Perunguzhi, Kerala"</code>).
               </p>
 
               <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 text-xs font-mono text-slate-600 text-left overflow-x-auto w-full">
-                Name, Father Name, Address, PMJ_NO, MR_NO, HEAD_PMJ_NO, Annual Subs, Arrears, Book No, Page No, Status
+                name, father_name, address, pmj_no, mr_no, head_pmj_no, annual_subs, arrears, book_no, page_no, status
               </div>
 
               <label className="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-6 rounded-xl shadow-sm transition-all">
