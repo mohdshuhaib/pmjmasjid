@@ -1,18 +1,15 @@
-// Generate Hijri Date (With dynamic offset from Supabase)
-// We default to -1 as it usually matches the local Kerala moon sighting
+// prayerUtils.ts
+
+import moment from "moment-hijri";
+
 export const getHijriDate = (offsetDays: number = -1) => {
   try {
-    const date = new Date();
-    // Offset for local moon sighting
-    date.setDate(date.getDate() + offsetDays);
+    // Apply local moon sighting offset
+    const date = moment().add(offsetDays, "days");
 
-    const formatter = new Intl.DateTimeFormat('en-TN-u-ca-islamic', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-    return formatter.format(date);
+    // Format: 14 Ramadan 1447 AH
+    return date.format("iD iMMMM iYYYY [AH]");
   } catch (e) {
-    return "1446 Hijri"; // Fallback if browser doesn't support Intl
+    return "1446 Hijri"; // Safe fallback
   }
 };
