@@ -292,14 +292,28 @@ export async function addPaymentAction(paymentData: any) {
           const admin = await import('firebase-admin');
           if (!admin.apps.length) {
 
-            // 1. Get the absolute path to the JSON file at the root of your project
-            const serviceAccountPath = path.join(process.cwd(), 'firebase-admin.json');
+            // Check if we have production environment variables
+            if (process.env.FIREBASE_PRIVATE_KEY) {
+              // --- PRODUCTION MODE ---
+              // Safely handle newlines just in case the server escapes them
+              const formattedKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
 
-            // 2. Pass the file path directly to cert()
-            // Firebase will automatically read, parse, and handle the PEM formatting perfectly.
-            admin.initializeApp({
-              credential: admin.credential.cert(serviceAccountPath)
-            });
+              admin.initializeApp({
+                credential: admin.credential.cert({
+                  projectId: process.env.FIREBASE_PROJECT_ID,
+                  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                  privateKey: formattedKey
+                })
+              });
+            } else {
+              // --- LOCAL DEVELOPMENT MODE ---
+              const path = await import('path');
+              const serviceAccountPath = path.join(process.cwd(), 'firebase-admin.json');
+
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccountPath)
+              });
+            }
           }
 
           const tokens = tokensData.map(t => t.token);
