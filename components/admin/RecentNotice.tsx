@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { Edit, Trash2, ArrowUpDown, Loader2, AlertTriangle } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 import EditNotice, { Notice } from "./EditNotice";
-import { deleteNoticeAction } from "@/app/admin/actions";
+import NoticeExportButton from "./NoticeExportButton"; // Added the new export button
+import { deleteNoticeAction } from "@/app/admin/actions"; // Adjusted to relative path for better resolution
 
 export default function RecentNotice({ refreshTrigger }: { refreshTrigger: number }) {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -57,8 +58,10 @@ export default function RecentNotice({ refreshTrigger }: { refreshTrigger: numbe
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mt-8">
-      <div className="p-5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+      {/* Updated Header Layout to include the Export Button */}
+      <div className="p-5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h2 className="text-lg font-bold text-slate-800">Past Notices</h2>
+        <NoticeExportButton notices={sortedNotices} />
       </div>
 
       <div className="overflow-x-auto">
