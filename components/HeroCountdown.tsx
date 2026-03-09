@@ -152,12 +152,12 @@ export default function HeroCountdown({ lang }: HeroCountdownProps) {
           isLoaded ? "opacity-100 blur-0" : "opacity-0 blur-sm"
         }`}
         style={{
-          backgroundImage: "url('/4kpmj.webp')",
+          backgroundImage: "url('/pmjmasjid.png')",
           backgroundPosition: "center",
           backgroundSize: "cover"
         }}
       >
-        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px]"></div>
+        {/* <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px]"></div> */}
       </div>
 
       {/* Hero Content Wrapper - Fades in once data is ready */}
