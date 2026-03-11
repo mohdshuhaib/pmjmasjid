@@ -115,123 +115,165 @@ export default function MarriageCertificateGenerator() {
     setTimeout(tryPrint, 1500);
   };
 
-  const generatePdf = async (mode: "download" | "print") => {
-    try {
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
-        compress: true,
-      });
-
-      const pageWidth = 297;
-      const pageHeight = 210;
-      const SCALE = 1.5;
-
-      const templateDataUrl = await loadImageAsDataUrl(getTemplatePath());
-
-      // Full background image
-      pdf.addImage(
-        templateDataUrl,
-        "PNG",
-        0,
-        0,
-        pageWidth,
-        pageHeight,
-        undefined,
-        "FAST"
-      );
-
-      pdf.setTextColor(30, 30, 30);
-
-      const drawText = (
-        text: string,
-        x: number,
-        y: number,
-        fontSize: number,
-        options?: {
-          align?: "left" | "center" | "right";
-          bold?: boolean;
-          maxWidth?: number;
-        }
-      ) => {
-        pdf.setFont("times", options?.bold ? "bold" : "normal");
-        pdf.setFontSize(fontSize);
-
-        if (options?.maxWidth) {
-          const lines = pdf.splitTextToSize(text || "", options.maxWidth);
-          pdf.text(lines, x, y, { align: options?.align || "left" });
-        } else {
-          pdf.text(text || "", x, y, { align: options?.align || "left" });
-        }
-      };
-
-      /**
-       * These PDF coordinates are mapped from your existing preview positions.
-       * Preview sizes and layout are kept unchanged.
-       * If needed, later you can fine-tune 1-2 mm after a sample print.
-       */
-
-      // Reg No
-      drawText(data.regNo, 47.5, 57, 10.5 * SCALE, { bold: true });
-
-      // Issue Date
-      drawText(data.issueDate, 243.5, 65.5, 10.5 * SCALE, { bold: true });
-
-      // Person 1 Name
-      drawText(person1Name, 140, 81, 15.5 * SCALE, {
-        bold: true,
-        align: "center",
-      });
-
-      // Person 1 Father + Address
-      drawText(person1FatherAddress, 81, 90.2, 11.5 * SCALE, {
-        maxWidth: 175,
-      });
-
-      // Person 1 Place
-      drawText(person1Place, 65.3, 100.2, 11.5 * SCALE, {
-        maxWidth: 145,
-      });
-
-      // Person 2 Name
-      drawText(person2Name, 85, 110, 15.5 * SCALE, {
-        bold: true,
-        align: "center",
-      });
-
-      // Person 2 Father + Address
-      drawText(person2FatherAddress, 80, 120, 11.5 * SCALE, {
-        maxWidth: 190,
-      });
-
-      // Person 2 Place
-      drawText(person2Place, 38.6, 130, 11.5 * SCALE, {
-        maxWidth: 165,
-      });
-
-      // Marriage Date
-      drawText(data.marriageDate, 254, 130, 11.5 * SCALE, {
-        bold: true,
-        align: "center",
-      });
-
-      // Marriage Place
-      drawText(data.marriagePlace, 44.6, 140, 11.5 * SCALE, {
-        bold: true,
-        maxWidth: 190,
-      });
-
-      if (mode === "download") {
-        pdf.save(`Marriage_Certificate_${data.regNo}.pdf`);
-      } else {
-        openPdfInNewTabAndPrint(pdf);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Failed to generate certificate PDF.");
+  const loadFontAsBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to load font: ${url}`);
     }
+
+    const arrayBuffer = await response.arrayBuffer();
+    let binary = "";
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binary);
   };
+
+  const registerAnekMalayalamFont = async (pdf: jsPDF) => {
+    const fontBase64 = await loadFontAsBase64("/AnekMalayalam-Variable.ttf");
+
+    pdf.addFileToVFS("AnekMalayalam-Variable.ttf", fontBase64);
+
+    pdf.addFont(
+      "AnekMalayalam-Variable.ttf",
+      "AnekMalayalam",
+      "normal",
+      "Identity-H"
+    );
+
+    pdf.addFont(
+      "AnekMalayalam-Variable.ttf",
+      "AnekMalayalam",
+      "bold",
+      "Identity-H"
+    );
+  };
+
+  const generatePdf = async (mode: "download" | "print") => {
+  try {
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+      compress: true,
+    });
+
+    const pageWidth = 297;
+    const pageHeight = 210;
+    const SCALE = 1.5;
+
+    const templateDataUrl = await loadImageAsDataUrl(getTemplatePath());
+
+    // Register Malayalam font
+    await registerAnekMalayalamFont(pdf);
+
+    // Full background image
+    pdf.addImage(
+      templateDataUrl,
+      "PNG",
+      0,
+      0,
+      pageWidth,
+      pageHeight,
+      undefined,
+      "FAST"
+    );
+
+    pdf.setTextColor(30, 30, 30);
+
+    const drawText = (
+      text: string,
+      x: number,
+      y: number,
+      fontSize: number,
+      options?: {
+        align?: "left" | "center" | "right";
+        bold?: boolean;
+        maxWidth?: number;
+      }
+    ) => {
+      pdf.setFont("AnekMalayalam", options?.bold ? "bold" : "normal");
+      pdf.setFontSize(fontSize);
+
+      if (options?.maxWidth) {
+        const lines = pdf.splitTextToSize(text || "", options.maxWidth);
+        pdf.text(lines, x, y, {
+          align: options?.align || "left",
+          baseline: "alphabetic",
+        });
+      } else {
+        pdf.text(text || "", x, y, {
+          align: options?.align || "left",
+          baseline: "alphabetic",
+        });
+      }
+    };
+
+    // Reg No
+    drawText(data.regNo, 47.5, 57, 10.5 * SCALE, { bold: true });
+
+    // Issue Date
+    drawText(data.issueDate, 243.5, 65.5, 10.5 * SCALE, { bold: true });
+
+    // Person 1 Name
+    drawText(person1Name, 140, 81, 15.5 * SCALE, {
+      bold: true,
+      align: "center",
+    });
+
+    // Person 1 Father + Address
+    drawText(person1FatherAddress, 81, 90.2, 11.5 * SCALE, {
+      maxWidth: 175,
+    });
+
+    // Person 1 Place
+    drawText(person1Place, 65.3, 100.2, 11.5 * SCALE, {
+      maxWidth: 145,
+    });
+
+    // Person 2 Name
+    drawText(person2Name, 85, 110, 15.5 * SCALE, {
+      bold: true,
+      align: "center",
+    });
+
+    // Person 2 Father + Address
+    drawText(person2FatherAddress, 80, 120, 11.5 * SCALE, {
+      maxWidth: 190,
+    });
+
+    // Person 2 Place
+    drawText(person2Place, 38.6, 130, 11.5 * SCALE, {
+      maxWidth: 165,
+    });
+
+    // Marriage Date
+    drawText(data.marriageDate, 254, 130, 11.5 * SCALE, {
+      bold: true,
+      align: "center",
+    });
+
+    // Marriage Place
+    drawText(data.marriagePlace, 44.6, 140, 11.5 * SCALE, {
+      bold: true,
+      maxWidth: 190,
+    });
+
+    if (mode === "download") {
+      pdf.save(`Marriage_Certificate_${data.regNo}.pdf`);
+    } else {
+      openPdfInNewTabAndPrint(pdf);
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Failed to generate certificate PDF.");
+  }
+};
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8">
@@ -251,8 +293,8 @@ export default function MarriageCertificateGenerator() {
           type="button"
           onClick={() => setActiveTab("marriage-certificate")}
           className={`px-5 py-3 rounded-xl font-semibold border transition-all ${activeTab === "marriage-certificate"
-              ? "bg-slate-900 text-white border-slate-900"
-              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+            ? "bg-slate-900 text-white border-slate-900"
+            : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
             }`}
         >
           Marriage Certificate
@@ -262,8 +304,8 @@ export default function MarriageCertificateGenerator() {
           type="button"
           onClick={() => setActiveTab("marriage-permission")}
           className={`px-5 py-3 rounded-xl font-semibold border transition-all ${activeTab === "marriage-permission"
-              ? "bg-slate-900 text-white border-slate-900"
-              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+            ? "bg-slate-900 text-white border-slate-900"
+            : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
             }`}
         >
           Marriage Permission Certificate
@@ -299,8 +341,8 @@ export default function MarriageCertificateGenerator() {
                 <div className="flex gap-4">
                   <label
                     className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${data.template === "male"
-                        ? "border-emerald-600 bg-emerald-50 text-emerald-800"
-                        : "border-slate-200 hover:border-emerald-300"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                      : "border-slate-200 hover:border-emerald-300"
                       }`}
                   >
                     <input
@@ -315,8 +357,8 @@ export default function MarriageCertificateGenerator() {
                   </label>
                   <label
                     className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all ${data.template === "female"
-                        ? "border-emerald-600 bg-emerald-50 text-emerald-800"
-                        : "border-slate-200 hover:border-emerald-300"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                      : "border-slate-200 hover:border-emerald-300"
                       }`}
                   >
                     <input
@@ -500,71 +542,71 @@ export default function MarriageCertificateGenerator() {
                 }}
               >
                 <div
-                  className="absolute font-inter font-bold"
-                  style={{ top: "24.3%", left: "16%", fontSize: "1.6cqw" }}
+                  className="absolute font-anek font-bold"
+                  style={{ top: "24.2%", left: "16%", fontSize: "1.8cqw" }}
                 >
                   {data.regNo}
                 </div>
 
                 <div
-                  className="absolute font-inter font-bold"
-                  style={{ top: "26%", left: "82%", fontSize: "1.6cqw" }}
+                  className="absolute font-anek font-bold"
+                  style={{ top: "28.2%", left: "82%", fontSize: "1.8cqw" }}
                 >
                   {data.issueDate}
                 </div>
 
                 <div
-                  className="absolute font-inter font-bold"
-                  style={{ top: "34%", left: "45%", fontSize: "2.6cqw" }}
+                  className="absolute font-anek font-bold"
+                  style={{ top: "35%", left: "45%", fontSize: "2.6cqw" }}
                 >
                   {person1Name}
                 </div>
 
                 <div
-                  className="absolute font-inter"
-                  style={{ top: "38.8%", left: "28%", fontSize: "2.2cqw" }}
+                  className="absolute font-anek"
+                  style={{ top: "40%", left: "28%", fontSize: "2.2cqw" }}
                 >
                   {person1FatherAddress}
                 </div>
 
                 <div
-                  className="absolute font-inter"
-                  style={{ top: "43.8%", left: "22%", fontSize: "2.2cqw" }}
+                  className="absolute font-anek"
+                  style={{ top: "45%", left: "22%", fontSize: "2.2cqw" }}
                 >
                   {person1Place}
                 </div>
 
                 <div
-                  className="absolute font-inter font-bold"
-                  style={{ top: "48%", left: "27%", fontSize: "2.6cqw" }}
+                  className="absolute font-anek font-bold"
+                  style={{ top: "49%", left: "27%", fontSize: "2.6cqw" }}
                 >
                   {person2Name}
                 </div>
 
                 <div
-                  className="absolute font-inter"
-                  style={{ top: "53%", left: "16%", fontSize: "2.2cqw" }}
+                  className="absolute font-anek"
+                  style={{ top: "54%", left: "25%", fontSize: "2.2cqw" }}
                 >
                   {person2FatherAddress}
                 </div>
 
                 <div
-                  className="absolute font-inter"
-                  style={{ top: "57.5%", left: "13%", fontSize: "2.2cqw" }}
+                  className="absolute font-anek"
+                  style={{ top: "58.6%", left: "13%", fontSize: "2.2cqw" }}
                 >
                   {person2Place}
                 </div>
 
                 <div
-                  className="absolute font-inter font-bold"
-                  style={{ top: "58%", left: "80%", fontSize: "2cqw" }}
+                  className="absolute font-anek font-bold"
+                  style={{ top: "59%", left: "80%", fontSize: "2cqw" }}
                 >
                   {data.marriageDate}
                 </div>
 
                 <div
-                  className="absolute font-inter font-bold"
-                  style={{ top: "62.6%", left: "15%", fontSize: "2.2cqw" }}
+                  className="absolute font-anek font-bold"
+                  style={{ top: "63.8%", left: "15%", fontSize: "2.2cqw" }}
                 >
                   {data.marriagePlace}
                 </div>
