@@ -23,7 +23,7 @@ export interface CSVMemberRow {
   arrears: string;
   book_no: string;
   page_no: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'deceased' | 'fee_exempt';
 }
 
 // 1. Bulk Process CSV
@@ -97,7 +97,7 @@ export async function addIndividualMember(formData: FormData) {
     arrears: (formData.get("arrears") as string) || '0',
     book_no: formData.get("book_no") as string,
     page_no: formData.get("page_no") as string,
-    status: (formData.get("status") as 'active' | 'inactive') || 'active'
+    status: (formData.get("status") as 'active' | 'deceased' | 'fee_exempt' ) || 'active'
   };
 
   const result = await processCSVUpload([row]);

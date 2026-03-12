@@ -48,6 +48,13 @@ export default function ManageMembers() {
         const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/(^"|"$)/g, '').trim());
 
         if (cols.length >= 5) {
+          const statusValue = cols[10]?.toLowerCase().trim();
+
+          const status =
+            statusValue === "deceased" || statusValue === "fee_exempt"
+              ? (statusValue as "deceased" | "fee_exempt")
+              : "active";
+
           parsedData.push({
             name: cols[0],
             father_name: cols[1] || "",
@@ -59,7 +66,7 @@ export default function ManageMembers() {
             arrears: cols[7] || "0",
             book_no: cols[8] || "",
             page_no: cols[9] || "",
-            status: (cols[10]?.toLowerCase() === 'inactive' ? 'inactive' : 'active')
+            status: status
           });
         }
       }
@@ -151,7 +158,8 @@ export default function ManageMembers() {
                 <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
                 <select name="status" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
                   <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="deceased">Deceased</option>
+                  <option value="fee_exempt">Fee Exempt</option>
                 </select>
               </div>
             </div>

@@ -17,7 +17,7 @@ export interface Member {
   arrears: string;
   book_no: string | null;
   page_no: string | null;
-  status: 'active' | 'inactive';
+  status: 'active' | 'deceased' | 'fee_exempt';
 }
 
 interface EditMemberProps {
@@ -153,7 +153,8 @@ export default function EditMember({ member, isOpen, onClose, onSave }: EditMemb
                 <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
                 <select name="status" value={formData.status} onChange={handleChange} className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
                   <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="deceased">Deceased</option>
+                  <option value="fee_exempt">Fee Exempt</option>
                 </select>
               </div>
             </div>

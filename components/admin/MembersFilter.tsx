@@ -8,8 +8,8 @@ interface MembersFilterProps {
   filteredCount: number;
   searchQuery: string;
   setSearchQuery: (val: string) => void;
-  statusFilter: "all" | "active" | "inactive";
-  setStatusFilter: (val: "all" | "active" | "inactive") => void;
+  statusFilter: "all" | "active" | "deceased" | "fee_exempt";
+  setStatusFilter: (val: "all" | "active" | "deceased" | "fee_exempt") => void;
   maritalFilter: "all" | "married" | "single";
   setMaritalFilter: (val: "all" | "married" | "single") => void;
   onExport: () => void;
@@ -71,7 +71,8 @@ export default function MembersFilter({
           >
             <option value="all">All Statuses</option>
             <option value="active">🟢 Active Members</option>
-            <option value="inactive">🔴 Inactive Members</option>
+            <option value="deceased">⚪ Deceased Members</option>
+            <option value="fee_exempt">🔵 Fee Exempt Members</option>
           </select>
         </div>
 
