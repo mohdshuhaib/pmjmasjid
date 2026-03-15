@@ -217,11 +217,10 @@ export default function TokenGeneratorPanel() {
               <button
                 type="button"
                 onClick={() => setSourceType("members")}
-                className={`p-3 rounded-xl border font-semibold flex items-center justify-center gap-2 transition-all ${
-                  sourceType === "members"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                    : "bg-white text-slate-700 border-slate-200"
-                }`}
+                className={`p-3 rounded-xl border font-semibold flex items-center justify-center gap-2 transition-all ${sourceType === "members"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                  : "bg-white text-slate-700 border-slate-200"
+                  }`}
               >
                 <Users className="w-4 h-4" />
                 Members
@@ -230,11 +229,10 @@ export default function TokenGeneratorPanel() {
               <button
                 type="button"
                 onClick={() => setSourceType("widows")}
-                className={`p-3 rounded-xl border font-semibold flex items-center justify-center gap-2 transition-all ${
-                  sourceType === "widows"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                    : "bg-white text-slate-700 border-slate-200"
-                }`}
+                className={`p-3 rounded-xl border font-semibold flex items-center justify-center gap-2 transition-all ${sourceType === "widows"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                  : "bg-white text-slate-700 border-slate-200"
+                  }`}
               >
                 <HeartHandshake className="w-4 h-4" />
                 Widows
@@ -345,11 +343,10 @@ export default function TokenGeneratorPanel() {
 
         {message && (
           <div
-            className={`p-4 rounded-xl border ${
-              message.type === "success"
-                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                : "bg-red-50 text-red-800 border-red-200"
-            }`}
+            className={`p-4 rounded-xl border ${message.type === "success"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-red-50 text-red-800 border-red-200"
+              }`}
           >
             {message.text}
           </div>
@@ -373,7 +370,7 @@ export default function TokenGeneratorPanel() {
                     className="border border-slate-700 rounded-xl p-2 flex flex-col"
                   >
                     <div className="text-center">
-                      <div className="font-bold text-[9px]">
+                      <div className="font-bold text-[10px] leading-tight">
                         Perunguzhi Muslim Jama&apos;ath Masjid
                       </div>
                       <div className="text-[8px] text-slate-600">Token Card</div>
@@ -383,19 +380,20 @@ export default function TokenGeneratorPanel() {
                       <img
                         src="/logo.png"
                         alt="Masjid Logo"
-                        className="w-8 h-8 object-contain shrink-0"
+                        className="w-9 h-9 object-contain shrink-0"
                       />
-                      <div className="font-bold text-[10px] leading-tight text-center flex-1">
+                      <div className="font-bold text-[11px] leading-tight text-center flex-1">
                         {selectedHeaderLabel}
                       </div>
                     </div>
 
                     <div className="mt-1 border-t pt-1.5 grid grid-cols-[1fr,1.9fr,1fr] gap-1 flex-1">
                       <div className="border-r pr-1 text-center">
-                        <div className="text-[8px] font-semibold text-slate-500">
-                          PMJ Number
+                        <div className="text-[8px] font-semibold text-slate-500 leading-tight">
+                          <div>PMJ</div>
+                          <div>Number</div>
                         </div>
-                        <div className="font-bold text-base mt-2">
+                        <div className="font-bold text-[20px] mt-2 leading-none">
                           {record.pmj_no}
                         </div>
                       </div>
@@ -404,16 +402,17 @@ export default function TokenGeneratorPanel() {
                         <div className="text-[8px] font-semibold text-slate-500">
                           Name
                         </div>
-                        <div className="font-bold text-[10px] mt-2 leading-tight">
+                        <div className="font-bold text-[11px] mt-2 leading-tight break-words">
                           {record.name}
                         </div>
                       </div>
 
                       <div className="text-center">
-                        <div className="text-[8px] font-semibold text-slate-500">
-                          Token Number
+                        <div className="text-[8px] font-semibold text-slate-500 leading-tight">
+                          <div>Token</div>
+                          <div>Number</div>
                         </div>
-                        <div className="font-bold text-base mt-2">
+                        <div className="font-bold text-[20px] mt-2 leading-none">
                           {index + 1}
                         </div>
                       </div>

@@ -74,83 +74,88 @@ export const generateTokenPdf = async ({
   const subTitle = "Token Card";
 
   const drawToken = (
-    token: TokenRecord,
-    tokenNumber: number,
-    x: number,
-    y: number
-  ) => {
-    pdf.setDrawColor(40, 40, 40);
-    pdf.setLineWidth(0.45);
-    pdf.roundedRect(x, y, tokenWidth, tokenHeight, 1.6, 1.6);
+  token: TokenRecord,
+  tokenNumber: number,
+  x: number,
+  y: number
+) => {
+  pdf.setDrawColor(40, 40, 40);
+  pdf.setLineWidth(0.45);
+  pdf.roundedRect(x, y, tokenWidth, tokenHeight, 1.6, 1.6);
 
-    // Masjid title
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(6.8);
-    pdf.text(masjidTitle, x + tokenWidth / 2, y + 5, { align: "center" });
+  // Masjid title
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7.4);
+  pdf.text(masjidTitle, x + tokenWidth / 2, y + 5.2, { align: "center" });
 
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(5.7);
-    pdf.text(subTitle, x + tokenWidth / 2, y + 8.3, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(6.2);
+  pdf.text(subTitle, x + tokenWidth / 2, y + 8.9, { align: "center" });
 
-    // Border below masjid title section
-    pdf.setLineWidth(0.3);
-    pdf.line(x + 2.5, y + 10.6, x + tokenWidth - 2.5, y + 10.6);
+  // Border below masjid title section
+  pdf.setLineWidth(0.3);
+  pdf.line(x + 2.5, y + 11.2, x + tokenWidth - 2.5, y + 11.2);
 
-    // Logo + header row
-    pdf.addImage(logoDataUrl, "PNG", x + 3, y + 12, 9.5, 9.5);
+  // Logo + header row
+  pdf.addImage(logoDataUrl, "PNG", x + 3, y + 12.4, 10.5, 10.5);
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.2);
-    pdf.text(headerLabel, x + tokenWidth / 2 + 3, y + 17.8, {
-      align: "center",
-    });
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7.9);
+  pdf.text(headerLabel, x + tokenWidth / 2 + 3, y + 18.9, {
+    align: "center",
+  });
 
-    // Border below logo/header row
-    pdf.setLineWidth(0.3);
-    pdf.line(x + 2.5, y + 23, x + tokenWidth - 2.5, y + 23);
+  // Border below logo/header row
+  pdf.setLineWidth(0.3);
+  pdf.line(x + 2.5, y + 24.6, x + tokenWidth - 2.5, y + 24.6);
 
-    // Info area
-    const infoTop = y + 24.5;
-    const infoBottom = y + tokenHeight - 3;
-    const c1 = x + tokenWidth * 0.25;
-    const c2 = x + tokenWidth * 0.73;
+  // Info area
+  const infoTop = y + 26.2;
+  const infoBottom = y + tokenHeight - 3;
+  const c1 = x + tokenWidth * 0.26;
+  const c2 = x + tokenWidth * 0.74;
 
-    pdf.setLineWidth(0.22);
-    pdf.line(c1, infoTop, c1, infoBottom);
-    pdf.line(c2, infoTop, c2, infoBottom);
+  pdf.setLineWidth(0.22);
+  pdf.line(c1, infoTop, c1, infoBottom);
+  pdf.line(c2, infoTop, c2, infoBottom);
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(5.2);
-    pdf.text("PMJ Number", x + tokenWidth * 0.125, infoTop + 3, {
-      align: "center",
-    });
-    pdf.text("Name", x + tokenWidth * 0.49, infoTop + 3, {
-      align: "center",
-    });
-    pdf.text("Token Number", x + tokenWidth * 0.865, infoTop + 3, {
-      align: "center",
-    });
+  // headings
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(5.9);
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10.5);
-    pdf.text(String(token.pmj_no ?? ""), x + tokenWidth * 0.125, infoTop + 11.5, {
-      align: "center",
-    });
+  pdf.text(["PMJ", "Number"], x + tokenWidth * 0.13, infoTop + 3.4, {
+    align: "center",
+  });
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(6.8);
-    const splitName = pdf.splitTextToSize(token.name || "", tokenWidth * 0.4);
-    pdf.text(splitName, x + tokenWidth * 0.49, infoTop + 8.5, {
-      align: "center",
-      maxWidth: tokenWidth * 0.4,
-    });
+  pdf.text("Name", x + tokenWidth * 0.5, infoTop + 5.2, {
+    align: "center",
+  });
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10.5);
-    pdf.text(String(tokenNumber), x + tokenWidth * 0.865, infoTop + 11.5, {
-      align: "center",
-    });
-  };
+  pdf.text(["Token", "Number"], x + tokenWidth * 0.87, infoTop + 3.4, {
+    align: "center",
+  });
+
+  // values
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(12.8);
+  pdf.text(String(token.pmj_no ?? ""), x + tokenWidth * 0.13, infoTop + 15.8, {
+    align: "center",
+  });
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7.8);
+  const splitName = pdf.splitTextToSize(token.name || "", tokenWidth * 0.4);
+  pdf.text(splitName, x + tokenWidth * 0.5, infoTop + 10.5, {
+    align: "center",
+    maxWidth: tokenWidth * 0.4,
+  });
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(12.8);
+  pdf.text(String(tokenNumber), x + tokenWidth * 0.87, infoTop + 15.8, {
+    align: "center",
+  });
+};
 
   records.forEach((record, index) => {
     if (index > 0 && index % perPage === 0) {
