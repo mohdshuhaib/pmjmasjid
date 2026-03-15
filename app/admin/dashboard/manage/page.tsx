@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import { UploadCloud, UserPlus, CheckCircle2, AlertCircle, Link as LinkIcon } from "lucide-react";
 import { addIndividualMember, processCSVUpload, CSVMemberRow } from "@/app/admin/actions";
 import Conversion from "@/components/admin/Conversion"; // Import the new component
+import AddWidow from "@/components/admin/AddWidow";
 
 export default function ManageMembers() {
-  const [activeTab, setActiveTab] = useState<"individual" | "csv" | "conversion">("individual");
+  const [activeTab, setActiveTab] = useState<"individual" | "csv" | "conversion" | "widow">("individual");
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -113,6 +114,15 @@ export default function ManageMembers() {
           className={`pb-3 px-2 font-medium transition-all whitespace-nowrap flex items-center gap-1 ${activeTab === 'conversion' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-800'}`}
         >
           <LinkIcon className="w-4 h-4" /> Convert to Head
+        </button>
+        <button
+          onClick={() => setActiveTab("widow")}
+          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${activeTab === 'widow'
+            ? 'text-emerald-600 border-b-2 border-emerald-600'
+            : 'text-slate-500 hover:text-slate-800'
+            }`}
+        >
+          Add Widow
         </button>
       </div>
 
@@ -240,6 +250,11 @@ export default function ManageMembers() {
         {/* --- CONVERSION TAB --- */}
         {activeTab === "conversion" && (
           <Conversion />
+        )}
+
+        {/* --- WIDOW TAB --- */}
+        {activeTab === "widow" && (
+          <AddWidow />
         )}
 
       </div>
