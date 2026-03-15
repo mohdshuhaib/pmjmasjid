@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Menu, X, LogOut, Settings, Heart, MicVocal, UserCog, Info, IndianRupee, Logs } from "lucide-react";
+import { LayoutDashboard, Users, Menu, X, LogOut, Settings, Heart, MicVocal, Tickets, UserCog, Info, IndianRupee, Logs } from "lucide-react";
 import { createBrowserClient } from "@supabase/ssr";
 
 export default function Sidebar() {
@@ -36,6 +36,7 @@ export default function Sidebar() {
     { name: "Marriage Section", href: "/admin/dashboard/marriage", icon: Heart },
     { name: "Manage Members", href: "/admin/dashboard/manage", icon: UserCog },
     { name: "Manage Azan", href: "/admin/dashboard/azan", icon: MicVocal },
+    { name: "Token Counter", href: "/admin/dashboard/token", icon: Tickets },
     { name: "Logs", href: "/admin/dashboard/logs", icon: Logs },
     { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
   ];
