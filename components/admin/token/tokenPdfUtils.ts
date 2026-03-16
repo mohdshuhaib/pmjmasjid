@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export interface TokenRecord {
   id: string;
@@ -8,43 +9,162 @@ export interface TokenRecord {
   source: "members" | "widows";
 }
 
-export const loadImageAsDataUrl = (src: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
+export interface TokenPdfRecord extends TokenRecord {
+  token_no: number;
+}
 
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+export type TokenLayoutOption = "1x15" | "1x8";
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Canvas context not available"));
-          return;
-        }
+export interface TokenLayoutConfig {
+  key: TokenLayoutOption;
+  label: string;
+  cols: number;
+  rows: number;
+  perPage: number;
+}
 
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
-      } catch (error) {
-        reject(error);
+export const TOKEN_LAYOUTS: Record<TokenLayoutOption, TokenLayoutConfig> = {
+  "1x15": {
+    key: "1x15",
+    label: "1 × 15",
+    cols: 3,
+    rows: 5,
+    perPage: 15,
+  },
+  "1x8": {
+    key: "1x8",
+    label: "1 × 8",
+    cols: 2,
+    rows: 4,
+    perPage: 8,
+  },
+};
+
+export const MASJID_TITLE_ML = "പെരുങ്ങുഴി മുസ്ലിം ജമാഅത്ത് പള്ളി";
+
+export const getListSubtitle = (source: "members" | "widows") =>
+  source === "members"
+    ? "ജമാഅത്ത് അംഗങ്ങളുടെ ടോക്കൺ ലിസ്റ്റ്"
+    : "ജമാഅത്ത് വിധവകളുടെ ടോക്കൺ ലിസ്റ്റ്";
+
+export const getSafeFileName = (value: string) =>
+  value.replace(/[^\p{L}\p{N}\s_-]/gu, "").trim().replace(/\s+/g, "_");
+
+export const paginateTokenRecords = (
+  records: TokenPdfRecord[],
+  layoutOption: TokenLayoutOption
+) => {
+  const perPage = TOKEN_LAYOUTS[layoutOption].perPage;
+  const pages: TokenPdfRecord[][] = [];
+
+  for (let i = 0; i < records.length; i += perPage) {
+    pages.push(records.slice(i, i + perPage));
+  }
+
+  return pages;
+};
+
+const estimateRowUnits = (name: string) => {
+  const length = (name || "").trim().length;
+
+  if (length <= 26) return 1;
+  if (length <= 46) return 1.35;
+  if (length <= 70) return 1.7;
+  return 2;
+};
+
+export const paginateListRecords = (records: TokenPdfRecord[]) => {
+  const firstPageCapacity = 20;
+  const otherPageCapacity = 24;
+
+  const pages: TokenPdfRecord[][] = [];
+  let currentPage: TokenPdfRecord[] = [];
+  let currentUsed = 0;
+  let capacity = firstPageCapacity;
+
+  for (const record of records) {
+    const rowUnits = estimateRowUnits(record.name);
+
+    if (currentUsed + rowUnits > capacity && currentPage.length > 0) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentUsed = 0;
+      capacity = otherPageCapacity;
+    }
+
+    currentPage.push(record);
+    currentUsed += rowUnits;
+  }
+
+  if (currentPage.length > 0) {
+    pages.push(currentPage);
+  }
+
+  return pages;
+};
+
+export const ensureMalayalamFontLoaded = async () => {
+  if (typeof window === "undefined") return;
+
+  const fontName = "AnekMalayalam";
+  const check = document.fonts.check(`16px "${fontName}"`);
+  if (!check) {
+    const font = new FontFace(
+      fontName,
+      `url("/AnekMalayalam-Variable.ttf") format("truetype")`,
+      {
+        weight: "100 900",
+        style: "normal",
       }
-    };
+    );
 
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    img.src = src;
+    await font.load();
+    document.fonts.add(font);
+  }
+
+  await document.fonts.ready;
+};
+
+const waitForImages = async (element: HTMLElement) => {
+  const images = Array.from(element.querySelectorAll("img"));
+
+  await Promise.all(
+    images.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+        })
+    )
+  );
+};
+
+const renderElementToCanvas = async (element: HTMLElement) => {
+  await waitForImages(element);
+  await ensureMalayalamFontLoaded();
+
+  return html2canvas(element, {
+    scale: Math.max(2, Math.min(3, window.devicePixelRatio || 2)),
+    useCORS: true,
+    backgroundColor: "#ffffff",
+    logging: false,
   });
 };
 
-export const generateTokenPdf = async ({
-  records,
-  headerLabel,
-  logoPath = "/logo.png",
+export const generateTokenPdfFromRenderedPages = async ({
+  tokenPageElements,
+  listPageElements,
+  fileName,
 }: {
-  records: TokenRecord[];
-  headerLabel: string;
-  logoPath?: string;
+  tokenPageElements: HTMLElement[];
+  listPageElements: HTMLElement[];
+  fileName: string;
 }) => {
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -53,124 +173,27 @@ export const generateTokenPdf = async ({
     compress: true,
   });
 
-  const logoDataUrl = await loadImageAsDataUrl(logoPath);
+  let isFirstPage = true;
 
-  const pageWidth = 210;
-  const pageHeight = 297;
+  const addCanvasPage = async (element: HTMLElement) => {
+  const canvas = await renderElementToCanvas(element);
+  const imgData = canvas.toDataURL("image/jpeg", 0.96);
 
-  const pageMarginX = 8;
-  const pageMarginY = 8;
-  const colGap = 5;
-  const rowGap = 5;
+  if (!isFirstPage) {
+    pdf.addPage();
+  }
 
-  const cols = 3;
-  const rows = 5;
-  const perPage = 15;
-
-  const tokenWidth = (pageWidth - pageMarginX * 2 - colGap * (cols - 1)) / cols;
-  const tokenHeight = (pageHeight - pageMarginY * 2 - rowGap * (rows - 1)) / rows;
-
-  const masjidTitle = "Perunguzhi Muslim Jama'ath Masjid";
-  const subTitle = "Token Card";
-
-  const drawToken = (
-  token: TokenRecord,
-  tokenNumber: number,
-  x: number,
-  y: number
-) => {
-  pdf.setDrawColor(40, 40, 40);
-  pdf.setLineWidth(0.45);
-  pdf.roundedRect(x, y, tokenWidth, tokenHeight, 1.6, 1.6);
-
-  // Masjid title
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.4);
-  pdf.text(masjidTitle, x + tokenWidth / 2, y + 5.2, { align: "center" });
-
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(6.2);
-  pdf.text(subTitle, x + tokenWidth / 2, y + 8.9, { align: "center" });
-
-  // Border below masjid title section
-  pdf.setLineWidth(0.3);
-  pdf.line(x + 2.5, y + 11.2, x + tokenWidth - 2.5, y + 11.2);
-
-  // Logo + header row
-  pdf.addImage(logoDataUrl, "PNG", x + 3, y + 12.4, 10.5, 10.5);
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.9);
-  pdf.text(headerLabel, x + tokenWidth / 2 + 3, y + 18.9, {
-    align: "center",
-  });
-
-  // Border below logo/header row
-  pdf.setLineWidth(0.3);
-  pdf.line(x + 2.5, y + 24.6, x + tokenWidth - 2.5, y + 24.6);
-
-  // Info area
-  const infoTop = y + 26.2;
-  const infoBottom = y + tokenHeight - 3;
-  const c1 = x + tokenWidth * 0.26;
-  const c2 = x + tokenWidth * 0.74;
-
-  pdf.setLineWidth(0.22);
-  pdf.line(c1, infoTop, c1, infoBottom);
-  pdf.line(c2, infoTop, c2, infoBottom);
-
-  // headings
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(5.9);
-
-  pdf.text(["PMJ", "Number"], x + tokenWidth * 0.13, infoTop + 3.4, {
-    align: "center",
-  });
-
-  pdf.text("Name", x + tokenWidth * 0.5, infoTop + 5.2, {
-    align: "center",
-  });
-
-  pdf.text(["Token", "Number"], x + tokenWidth * 0.87, infoTop + 3.4, {
-    align: "center",
-  });
-
-  // values
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12.8);
-  pdf.text(String(token.pmj_no ?? ""), x + tokenWidth * 0.13, infoTop + 15.8, {
-    align: "center",
-  });
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.8);
-  const splitName = pdf.splitTextToSize(token.name || "", tokenWidth * 0.4);
-  pdf.text(splitName, x + tokenWidth * 0.5, infoTop + 10.5, {
-    align: "center",
-    maxWidth: tokenWidth * 0.4,
-  });
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12.8);
-  pdf.text(String(tokenNumber), x + tokenWidth * 0.87, infoTop + 15.8, {
-    align: "center",
-  });
+  pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+  isFirstPage = false;
 };
 
-  records.forEach((record, index) => {
-    if (index > 0 && index % perPage === 0) {
-      pdf.addPage();
-    }
+  for (const page of tokenPageElements) {
+    await addCanvasPage(page);
+  }
 
-    const pageIndex = index % perPage;
-    const row = Math.floor(pageIndex / cols);
-    const col = pageIndex % cols;
+  for (let i = 0; i < listPageElements.length; i++) {
+  await addCanvasPage(listPageElements[i]);
+}
 
-    const x = pageMarginX + col * (tokenWidth + colGap);
-    const y = pageMarginY + row * (tokenHeight + rowGap);
-
-    drawToken(record, index + 1, x, y);
-  });
-
-  pdf.save(`Token_Cards_${headerLabel.replace(/\s+/g, "_")}.pdf`);
+  pdf.save(fileName);
 };

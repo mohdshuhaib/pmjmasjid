@@ -49,3 +49,15 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+@font-face {
+  font-family: "AnekMalayalam";
+  src: url("/AnekMalayalam-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-anek-malayalam {
+  font-family: "AnekMalayalam", sans-serif;
+}
