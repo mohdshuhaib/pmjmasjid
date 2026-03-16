@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image"; // 1. Added Next.js Image component
-import { MapPin, Phone, Heart, User, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { MapPin, Phone, Heart, User, ArrowRight, BookOpen, ExternalLink } from "lucide-react";
 import { TRANSLATIONS, Language } from "@/lib/translations";
-// Removed MoonIcon import
 import Header from "@/components/Header";
 import HeroCountdown from "@/components/HeroCountdown";
 import PrayerTimes from "@/components/PrayerTimes";
@@ -15,6 +14,9 @@ import Link from 'next/link';
 export default function Home() {
   const [lang, setLang] = useState<Language>("en");
   const t = TRANSLATIONS[lang];
+
+  // BYLAW GOOGLE DRIVE LINK - Paste your actual link here!
+  const BYLAW_LINK = "https://drive.google.com/file/d/1xd-yKDwCJpnvSXrxeZYHmgvXoRWO9bqL/view?usp=sharing";
 
   return (
     <div className={`bg-slate-50 flex flex-col ${lang === 'ml' ? 'font-anek' : 'font-inter'}`}>
@@ -32,6 +34,40 @@ export default function Home() {
 
         <NoticeBoard lang={lang} />
 
+        {/* --- BYLAW BANNER (NEW) --- */}
+        <div className="bg-emerald-800 rounded-3xl shadow-xl overflow-hidden relative transition-transform hover:-translate-y-1 duration-300">
+          {/* Subtle Background Pattern/Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/50 to-transparent"></div>
+
+          <div className="relative p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+            <div className="flex flex-col md:flex-row items-center gap-6 text-white">
+              <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 backdrop-blur-md border border-white/20 shadow-inner">
+                <BookOpen className="w-10 h-10 text-emerald-100" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-2 tracking-tight">
+                  {lang === 'ml' ? 'ജമാഅത്ത് ഭരണഘടന' : 'Jama\'ath Constitution & Bylaws'}
+                </h2>
+                <p className="text-emerald-100/90 max-w-xl text-sm md:text-base leading-relaxed">
+                  {lang === 'ml'
+                    ? 'പെരുങ്ങുഴി മുസ്‌ലിം ജമാഅത്തിന്റെ ഔദ്യോഗിക ഭരണഘടനയും (Bylaw) നിയമാവലികളും വായിച്ചു മനസ്സിലാക്കുക.'
+                    : 'Read the official constitution, rules, and regulations governing the Perunguzhi Muslim Jama\'ath.'}
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={BYLAW_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white text-emerald-900 hover:bg-emerald-50 px-8 py-4 rounded-xl font-bold transition-all shadow-xl flex items-center gap-3 shrink-0 whitespace-nowrap group"
+            >
+              {lang === 'ml' ? 'വായിക്കുക' : 'Read Bylaw'}
+              <ExternalLink className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
+            </a>
+          </div>
+        </div>
+
         <CommitteeMembers lang={lang} />
 
       </main>
@@ -45,7 +81,6 @@ export default function Home() {
             <div className="space-y-8">
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-                  {/* 2. Replaced MoonIcon with your actual logo */}
                   <Image
                     src="/logo.png"
                     alt="PMJ Masjid Logo"
@@ -78,11 +113,18 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-slate-800">
+              <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row gap-4 sm:gap-8">
+                {/* Member Login Link */}
                 <Link href="/login" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
                   <User className="w-4 h-4" />
                   {t.fundStatusLink} <ArrowRight className="w-4 h-4" />
                 </Link>
+
+                {/* Footer Bylaw Link */}
+                <a href={BYLAW_LINK} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                  {lang === 'ml' ? 'നിയമാവലി (Bylaw)' : 'Jama\'ath Bylaw'} <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
 
