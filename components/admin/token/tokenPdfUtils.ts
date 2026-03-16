@@ -40,7 +40,7 @@ export const TOKEN_LAYOUTS: Record<TokenLayoutOption, TokenLayoutConfig> = {
   },
 };
 
-export const MASJID_TITLE_ML = "പെരുങ്ങുഴി മുസ്ലിം ജമാഅത്ത് പള്ളി";
+export const MASJID_TITLE_ML = "പെരുങ്ങുഴി മുസ്ലിം ജമാഅത്ത്";
 
 export const getListSubtitle = (source: "members" | "widows") =>
   source === "members"
