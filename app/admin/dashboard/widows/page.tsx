@@ -28,7 +28,6 @@ export default function WidowsPage() {
   useEffect(() => {
     async function fetchWidows() {
       setLoading(true);
-
       const { data, error } = await supabase
         .from("widows")
         .select("*")
@@ -37,10 +36,8 @@ export default function WidowsPage() {
       if (!error && data) {
         setWidows(data);
       }
-
       setLoading(false);
     }
-
     fetchWidows();
   }, [supabase]);
 
@@ -60,10 +57,38 @@ export default function WidowsPage() {
           return false;
         }
       }
-
       return true;
     });
   }, [widows, statusFilter, searchQuery]);
+
+  // --- EXPORT TO EXCEL LOGIC ---
+  const handleExportExcel = () => {
+    const sorted = [...filteredWidows].sort((a, b) => (a.pmj_no || 999999) - (b.pmj_no || 999999));
+    const headers = ["SL NO", "Name", "Address", "PMJ No", "Book No", "Page No", "Status"];
+
+    const rows = sorted.map((w, index) => {
+      return [
+        index + 1,
+        `"${(w.name || '').replace(/"/g, '""')}"`,
+        `"${(w.address || '').replace(/"/g, '""')}"`,
+        w.pmj_no || 'N/A',
+        `"${(w.book_no || '').replace(/"/g, '""')}"`,
+        `"${(w.page_no || '').replace(/"/g, '""')}"`,
+        w.status
+      ].join(",");
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `PMJ_Widows_Export_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleSaveEdit = (updatedWidow: Widow) => {
     setWidows((prev) => prev.map((w) => (w.id === updatedWidow.id ? updatedWidow : w)));
@@ -71,7 +96,6 @@ export default function WidowsPage() {
 
   const confirmDelete = async () => {
     if (!deletingWidow) return;
-
     setDeleteLoading(true);
 
     const { error } = await supabase.from("widows").delete().eq("id", deletingWidow.id);
@@ -95,6 +119,7 @@ export default function WidowsPage() {
         setSearchQuery={setSearchQuery}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        onExport={handleExportExcel}
       />
 
       <WidowsTable
