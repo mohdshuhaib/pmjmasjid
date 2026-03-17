@@ -133,7 +133,7 @@ export default function HeroSection({ id, lang, timings, settings, bylawLink }: 
         </p>
 
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-white md:text-6xl">
-          {t.welcome}
+          {t.homepage}
         </h1>
 
         <div className="mb-10 flex flex-col items-center gap-3 text-emerald-50 md:flex-row md:gap-6">

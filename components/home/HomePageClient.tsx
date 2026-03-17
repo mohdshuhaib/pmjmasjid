@@ -194,7 +194,7 @@ export default function HomePageClient({ data }: Props) {
             <p>
               © {new Date().getFullYear()} {t.masjidName}. All rights reserved.
             </p>
-            <p className="flex items-center gap-1.5">
+            <p className="flex items-center gap-1.5 mb-10 md:mb-0">
               {t.madeWith} <Heart className="h-4 w-4 fill-red-500 text-red-500" /> {t.by}
             </p>
           </div>
