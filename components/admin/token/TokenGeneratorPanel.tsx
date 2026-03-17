@@ -902,13 +902,13 @@ function PremiumTokenCard({
         <div className="relative z-10 h-full flex flex-col">
           <div className="text-center">
             <div
-              className={`font-extrabold text-slate-900 leading-tight ${large ? "text-[13px]" : "text-[11px]"
+              className={`font-extrabold text-slate-900 leading-tight ${large ? "text-[19px]" : "text-[11px]"
                 }`}
             >
               {MASJID_TITLE_ML}
             </div>
             <div
-              className={`font-semibold tracking-[0.2em] text-slate-500 ${large ? "text-[9px]" : "text-[8px]"
+              className={`font-semibold tracking-[0.2em] text-slate-500 ${large ? "text-[11px]" : "text-[8px]"
                 }`}
             >
               TOKEN CARD
@@ -928,7 +928,7 @@ function PremiumTokenCard({
             </div>
 
             <div
-              className={`font-extrabold text-center leading-tight text-slate-800 flex-1 ${large ? "text-[16px]" : "text-[13px]"
+              className={`font-extrabold text-center leading-tight text-slate-800 flex-1 ${large ? "text-[19px]" : "text-[13px]"
                 }`}
             >
               {headerLabel}
@@ -938,7 +938,7 @@ function PremiumTokenCard({
           <div className="mt-2 pt-2 border-t border-slate-200 grid grid-cols-[1fr,2fr,1fr] gap-2 flex-1">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 text-center px-2 py-2 flex flex-col shadow-sm">
               <div
-                className={`font-bold tracking-wide text-slate-500 leading-tight ${large ? "text-[10px]" : "text-[8.5px]"
+                className={`font-bold tracking-wide text-slate-500 leading-tight ${large ? "text-[11px]" : "text-[8.5px]"
                   }`}
               >
                 <div>PMJ</div>
@@ -946,7 +946,7 @@ function PremiumTokenCard({
               </div>
 
               <div
-                className={`font-black text-emerald-700 leading-none my-auto drop-shadow-sm ${large ? "text-[34px]" : "text-[26px]"
+                className={`font-black text-emerald-700 leading-none my-auto drop-shadow-sm ${large ? "text-[37px]" : "text-[26px]"
                   }`}
               >
                 {record.pmj_no}
@@ -955,14 +955,14 @@ function PremiumTokenCard({
 
             <div className="rounded-2xl border border-slate-200 bg-white text-center px-2 py-2 flex flex-col shadow-sm">
               <div
-                className={`font-bold tracking-wide text-slate-500 ${large ? "text-[10px]" : "text-[8.5px]"
+                className={`font-bold tracking-wide text-slate-500 ${large ? "text-[11px]" : "text-[8.5px]"
                   }`}
               >
                 NAME
               </div>
 
               <div
-                className={`font-black text-slate-900 leading-tight my-auto break-words ${large ? "text-[17px]" : "text-[14px]"
+                className={`font-black text-slate-900 leading-tight my-auto break-words ${large ? "text-[19px]" : "text-[14px]"
                   }`}
               >
                 {record.name}
@@ -971,7 +971,7 @@ function PremiumTokenCard({
 
             <div className="rounded-2xl border border-amber-200 bg-amber-50 text-center px-2 py-2 flex flex-col shadow-sm">
               <div
-                className={`font-bold tracking-wide text-amber-700 leading-tight ${large ? "text-[10px]" : "text-[8.5px]"
+                className={`font-bold tracking-wide text-amber-700 leading-tight ${large ? "text-[11px]" : "text-[8.5px]"
                   }`}
               >
                 <div>TOKEN</div>
@@ -979,7 +979,7 @@ function PremiumTokenCard({
               </div>
 
               <div
-                className={`font-black text-rose-700 leading-none my-auto drop-shadow-sm ${large ? "text-[34px]" : "text-[26px]"
+                className={`font-black text-rose-700 leading-none my-auto drop-shadow-sm ${large ? "text-[37px]" : "text-[26px]"
                   }`}
               >
                 {record.token_no}
