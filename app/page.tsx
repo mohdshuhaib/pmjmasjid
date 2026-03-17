@@ -16,7 +16,7 @@ export default function Home() {
   const t = TRANSLATIONS[lang];
 
   // BYLAW GOOGLE DRIVE LINK - Paste your actual link here!
-  const BYLAW_LINK = "https://drive.google.com/file/d/1xd-yKDwCJpnvSXrxeZYHmgvXoRWO9bqL/view?usp=sharing";
+  const BYLAW_LINK = "https://drive.google.com/file/d/19AbRhTsBo6eW1YjXGAZo1sHZ0tUiWXe9/view?usp=sharing";
 
   return (
     <div className={`bg-slate-50 flex flex-col ${lang === 'ml' ? 'font-anek' : 'font-inter'}`}>
