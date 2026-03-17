@@ -74,7 +74,12 @@ export const TRANSLATIONS = {
     loading: "Loading...",
     dashboard: "Dashboard",
     adminPortal: "Admin Portal",
-    usthad: "Usthad Rafi Baqavi"
+    usthad: "Usthad Rafi Baqavi",
+    gotIt: "Got it",
+    iosInstallLine1: "To install on iPhone/iPad, open this site in Safari.",
+    iosInstallLine2a: "Then tap",
+    iosInstallLine2b: "and choose",
+    iosAddToHome: "Add to Home Screen",
   },
   ml: {
     masjidName: "പി.എം.ജെ മസ്ജിദ്",
@@ -149,6 +154,11 @@ export const TRANSLATIONS = {
     loading: "ലോഡിംഗ്...",
     dashboard: "ഡാഷ്‌ബോർഡ്",
     adminPortal: "അഡ്മിൻ പോർട്ടൽ",
-    usthad: "ഉസ്താദ് റാഫി ബാഖവി"
+    usthad: "ഉസ്താദ് റാഫി ബാഖവി",
+    gotIt: "മനസ്സിലായി",
+    iosInstallLine1: "iPhone/iPad ൽ ഇൻസ്റ്റാൾ ചെയ്യാൻ Safari ൽ ഈ സൈറ്റ് തുറക്കുക.",
+    iosInstallLine2a: "പിന്നീട്",
+    iosInstallLine2b: "എന്ന് തിരഞ്ഞെടുക്കുക",
+    iosAddToHome: "Add to Home Screen",
   }
 };
