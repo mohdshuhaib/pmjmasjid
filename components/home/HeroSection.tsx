@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Calendar, ArrowRight, BookOpen, Bell, User } from "lucide-react";
 import { motion } from "framer-motion";
@@ -30,6 +30,7 @@ export default function HeroSection({ id, lang, timings, settings, bylawLink }: 
   const [nextPrayerName, setNextPrayerName] = useState("...");
   const [currentDateStr, setCurrentDateStr] = useState("");
   const [hijriDateStr, setHijriDateStr] = useState("");
+  const [isNight, setIsNight] = useState<boolean | null>(null);
 
   useEffect(() => {
     setCurrentDateStr(
@@ -43,17 +44,26 @@ export default function HeroSection({ id, lang, timings, settings, bylawLink }: 
     setHijriDateStr(getHijriDate(settings.hijri_offset));
   }, [lang, settings.hijri_offset]);
 
-  const isNight = useMemo(() => {
-    if (!timings?.Sunrise || !timings?.Maghrib) {
-      const hour = new Date().getHours();
-      return hour >= 18 || hour < 6;
-    }
+  useEffect(() => {
+    const updateDayNight = () => {
+      const now = new Date();
 
-    const now = new Date();
-    const sunrise = parseTimeToDate(timings.Sunrise);
-    const maghrib = parseTimeToDate(timings.Maghrib);
+      if (!timings?.Sunrise || !timings?.Maghrib) {
+        const hour = now.getHours();
+        setIsNight(hour >= 18 || hour < 6);
+        return;
+      }
 
-    return now < sunrise || now >= maghrib;
+      const sunrise = parseTimeToDate(timings.Sunrise);
+      const maghrib = parseTimeToDate(timings.Maghrib);
+
+      setIsNight(now < sunrise || now >= maghrib);
+    };
+
+    updateDayNight();
+
+    const interval = setInterval(updateDayNight, 60 * 1000);
+    return () => clearInterval(interval);
   }, [timings]);
 
   useEffect(() => {
@@ -106,13 +116,20 @@ export default function HeroSection({ id, lang, timings, settings, bylawLink }: 
     return () => clearInterval(timer);
   }, [timings, t]);
 
+  const heroImage =
+    isNight === null
+      ? "/hero-day.webp" // temporary fallback during first client render
+      : isNight
+      ? "/hero-night.webp"
+      : "/hero-day.webp";
+
   return (
     <section
       id={id}
       className="relative flex min-h-[92vh] items-center justify-center overflow-hidden bg-slate-950 scroll-mt-24"
     >
       <Image
-        src={isNight ? "/hero-night.webp" : "/hero-day.webp"}
+        src={heroImage}
         alt="PMJ Masjid"
         fill
         priority
