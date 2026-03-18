@@ -184,20 +184,24 @@ export default function Conversion() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Assign New PMJ Number</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="number"
                     value={newPmjNo}
                     disabled={converting}
-                    onChange={(e) => { setNewPmjNo(e.target.value); setPmjStatus("idle"); setConversionMessage(null); }}
-                    className="flex-1 border border-slate-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-lg disabled:opacity-50 disabled:bg-slate-50"
+                    onChange={(e) => {
+                      setNewPmjNo(e.target.value);
+                      setPmjStatus("idle");
+                      setConversionMessage(null);
+                    }}
+                    className="flex-1 w-full border border-slate-300 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-lg disabled:opacity-50 disabled:bg-slate-50"
                     placeholder="e.g. 501"
                   />
                   <button
                     type="button"
                     onClick={checkPmjUniqueness}
                     disabled={!newPmjNo || isChecking || converting}
-                    className="px-4 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold disabled:opacity-50 transition-colors flex items-center justify-center min-w-[100px]"
+                    className="w-full sm:w-auto sm:min-w-[100px] px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold disabled:opacity-50 transition-colors flex items-center justify-center"
                   >
                     {isChecking ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify"}
                   </button>
