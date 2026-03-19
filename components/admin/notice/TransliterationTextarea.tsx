@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Languages, Mic, MicOff } from "lucide-react";
-import { useMalayalamVoiceInput } from "./useMalayalamVoiceInput";
+import { Languages } from "lucide-react";
 import { useMalayalamTransliteration } from "./useMalayalamTransliteration";
 
 interface Props {
@@ -26,7 +25,6 @@ function getWordBoundaries(text: string, cursor: number) {
   return {
     before: text.slice(0, start),
     word: text.slice(start, cursor),
-    afterCursorInWord: text.slice(cursor, end),
     afterWord: text.slice(end),
     fullWord: text.slice(start, end),
     start,
@@ -82,13 +80,6 @@ export default function TransliterationTextarea({
     });
   };
 
-  const handleTranscript = (transcript: string) => {
-    const next = value ? `${value} ${transcript}` : transcript;
-    onChange(next);
-    setCaretPosition(next.length);
-  };
-
-  const { supported, isListening, start, stop } = useMalayalamVoiceInput(handleTranscript);
 
   const moveSelection = (direction: 1 | -1) => {
     if (!suggestions.length) return;
@@ -152,6 +143,7 @@ export default function TransliterationTextarea({
     }
   };
 
+
   const commonClass =
     "w-full rounded-2xl border border-slate-300 p-4 text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100";
 
@@ -160,12 +152,6 @@ export default function TransliterationTextarea({
     fontSize: "16px",
     lineHeight: "1.75",
   };
-
-  const handleVoiceButtonMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
-  e.preventDefault();
-  const node = inputRef.current;
-  node?.blur();
-};
 
   return (
     <div className="space-y-2">
@@ -176,29 +162,15 @@ export default function TransliterationTextarea({
           <button
             type="button"
             onClick={() => setTransliterationEnabled((prev) => !prev)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${transliterationEnabled
+            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+              transliterationEnabled
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                 : "border-slate-200 bg-white text-slate-600"
-              }`}
+            }`}
           >
             <Languages className="h-4 w-4" />
             {transliterationEnabled ? "Manglish On" : "Manglish Off"}
           </button>
-
-          {supported && (
-            <button
-              type="button"
-              onMouseDown={handleVoiceButtonMouseDown}
-              onClick={isListening ? stop : start}
-              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${isListening
-                  ? "border-red-200 bg-red-50 text-red-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
-                }`}
-            >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              {isListening ? "Stop Voice" : "Malayalam Voice"}
-            </button>
-          )}
         </div>
       </div>
 
@@ -263,10 +235,11 @@ export default function TransliterationTextarea({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applySuggestion(item.value)}
-                  className={`shrink-0 min-h-[44px] px-4 py-2 rounded-2xl text-sm md:text-base border font-medium transition ${index === selectedIndex
+                  className={`shrink-0 min-h-[44px] px-4 py-2 rounded-2xl text-sm md:text-base border font-medium transition ${
+                    index === selectedIndex
                       ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                       : "bg-slate-50 border-slate-200 text-slate-700 active:bg-emerald-50 active:border-emerald-200"
-                    }`}
+                  }`}
                 >
                   {item.value}
                 </button>
