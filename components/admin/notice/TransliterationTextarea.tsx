@@ -161,6 +161,12 @@ export default function TransliterationTextarea({
     lineHeight: "1.75",
   };
 
+  const handleVoiceButtonMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault();
+  const node = inputRef.current;
+  node?.blur();
+};
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -170,11 +176,10 @@ export default function TransliterationTextarea({
           <button
             type="button"
             onClick={() => setTransliterationEnabled((prev) => !prev)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-              transliterationEnabled
+            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${transliterationEnabled
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                 : "border-slate-200 bg-white text-slate-600"
-            }`}
+              }`}
           >
             <Languages className="h-4 w-4" />
             {transliterationEnabled ? "Manglish On" : "Manglish Off"}
@@ -183,12 +188,12 @@ export default function TransliterationTextarea({
           {supported && (
             <button
               type="button"
+              onMouseDown={handleVoiceButtonMouseDown}
               onClick={isListening ? stop : start}
-              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-                isListening
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${isListening
                   ? "border-red-200 bg-red-50 text-red-700"
                   : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
-              }`}
+                }`}
             >
               {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               {isListening ? "Stop Voice" : "Malayalam Voice"}
@@ -258,11 +263,10 @@ export default function TransliterationTextarea({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applySuggestion(item.value)}
-                  className={`shrink-0 min-h-[44px] px-4 py-2 rounded-2xl text-sm md:text-base border font-medium transition ${
-                    index === selectedIndex
+                  className={`shrink-0 min-h-[44px] px-4 py-2 rounded-2xl text-sm md:text-base border font-medium transition ${index === selectedIndex
                       ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                       : "bg-slate-50 border-slate-200 text-slate-700 active:bg-emerald-50 active:border-emerald-200"
-                  }`}
+                    }`}
                 >
                   {item.value}
                 </button>

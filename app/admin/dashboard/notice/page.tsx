@@ -1,13 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { BellRing, CheckCircle2, AlertCircle, Loader2, Send, FileText } from "lucide-react";
+import {
+  BellRing,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Send,
+  FileText,
+  ScrollText,
+} from "lucide-react";
 import { sendNoticeAction } from "@/app/admin/actions";
 import RecentNotice from "@/components/admin/RecentNotice";
-import PrintableNoticeBuilder from "@/components/admin/notice/PrintableNoticeBuilder";
+import LetterHeadNoticeBuilder from "@/components/admin/notice/LetterHeadNoticeBuilder";
+import BlankNoticeBuilder from "@/components/admin/notice/BlankNoticeBuilder";
 
 export default function NoticePage() {
-  const [activeTab, setActiveTab] = useState<"broadcast" | "print">("broadcast");
+  const [activeTab, setActiveTab] = useState<"broadcast" | "letterhead" | "blank">("broadcast");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -39,7 +48,7 @@ export default function NoticePage() {
           Notice Center
         </h1>
         <p className="text-slate-500 mt-1">
-          Broadcast notices to members and create print-ready Malayalam notice PDFs in your own Jama&apos;ath style.
+          Broadcast notices, create letter-head notices, and generate plain blank-paper notices.
         </p>
       </div>
 
@@ -55,14 +64,24 @@ export default function NoticePage() {
           <Send className="w-4 h-4" /> Send Notice
         </button>
         <button
-          onClick={() => setActiveTab("print")}
+          onClick={() => setActiveTab("letterhead")}
           className={`pb-3 px-2 font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-            activeTab === "print"
+            activeTab === "letterhead"
               ? "text-emerald-600 border-b-2 border-emerald-600"
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          <FileText className="w-4 h-4" /> Make Printable Notice
+          <FileText className="w-4 h-4" /> Letter Head
+        </button>
+        <button
+          onClick={() => setActiveTab("blank")}
+          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "blank"
+              ? "text-emerald-600 border-b-2 border-emerald-600"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <ScrollText className="w-4 h-4" /> Blank Notice
         </button>
       </div>
 
@@ -154,7 +173,8 @@ export default function NoticePage() {
         </>
       )}
 
-      {activeTab === "print" && <PrintableNoticeBuilder />}
+      {activeTab === "letterhead" && <LetterHeadNoticeBuilder />}
+      {activeTab === "blank" && <BlankNoticeBuilder />}
     </div>
   );
 }

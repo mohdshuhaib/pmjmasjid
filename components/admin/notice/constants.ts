@@ -1,4 +1,12 @@
-import { NoticeDesignState, MarginPreset, RoleValue, FontWeightKey, PageSize, Orientation } from "./types";
+import {
+  BlankNoticeDesignState,
+  NoticeDesignState,
+  MarginPreset,
+  RoleValue,
+  FontWeightKey,
+  PageSize,
+  Orientation,
+} from "./types";
 
 export const FONT_FAMILY = "AnekMalayalam";
 export const FONT_URL = "/AnekMalayalam-Variable.ttf";
@@ -51,5 +59,21 @@ export const defaultDesignState: NoticeDesignState = {
     details: { size: 12.5, weight: "normal", align: "justify" },
     meta: { size: 11, weight: "medium", align: "left" },
     confirmedBy: { size: 12, weight: "medium", align: "right" },
+  },
+};
+
+export const defaultBlankNoticeState: BlankNoticeDesignState = {
+  heading: "പ്രധാന അറിയിപ്പ്",
+  details: "ഇവിടെ ഉള്ളടക്കം എഴുതാം.",
+  noticeDate: new Date().toISOString().split("T")[0],
+  confirmedBy: "Secretary",
+  pageSize: "A4",
+  orientation: "portrait",
+  marginPreset: "standard",
+  typography: {
+    heading: { size: 22, weight: "semibold", align: "center" },
+    details: { size: 13, weight: "normal", align: "justify" },
+    meta: { size: 11, weight: "medium", align: "left" },
+    confirmedBy: { size: 11, weight: "medium", align: "right" },
   },
 };

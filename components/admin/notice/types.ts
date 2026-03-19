@@ -22,3 +22,19 @@ export interface NoticeDesignState {
   refNumber: string;
   typography: Record<FieldKey, TypographyConfig>;
 }
+
+export interface BlankNoticeDesignState {
+  heading: string;
+  details: string;
+  noticeDate: string;
+  confirmedBy: RoleValue;
+  pageSize: PageSize;
+  orientation: Orientation;
+  marginPreset: MarginPreset;
+  typography: Record<"heading" | "details" | "meta" | "confirmedBy", TypographyConfig>;
+}
+
+export interface CommitteeContacts {
+  president: string;
+  secretary: string;
+}

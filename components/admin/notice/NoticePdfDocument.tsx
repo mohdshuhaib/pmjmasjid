@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import { NoticeDesignState } from "./types";
+import { NoticeDesignState, CommitteeContacts } from "./types";
 import { buildReferenceCode, formatDisplayDate } from "./utils";
 import { confirmedByMalayalamMap, FONT_FAMILY, LOGO_URL, marginPresetMap, weightMap } from "./constants";
 
@@ -44,7 +44,7 @@ function getPdfStyles(state: NoticeDesignState) {
     headerMalayalamTop: { fontSize: 12, fontWeight: 700, textAlign: "right", color: "#065f46" },
     headerMalayalamMid: { fontSize: 10, fontWeight: 500, textAlign: "right" },
     headerMalayalamBottom: { fontSize: 11, fontWeight: 500, textAlign: "right" },
-    logo: { width: 50, height: 50, objectFit: "contain"},
+    logo: { width: 50, height: 50, objectFit: "contain" },
     regText: { fontSize: 8.5, textAlign: "center", fontWeight: 500 },
     separatorWrap: { marginTop: 8, marginBottom: 10, gap: 2 },
     separatorLine1: { borderTopWidth: 1, borderTopColor: "#b91c1c" },
@@ -99,7 +99,7 @@ function getPdfStyles(state: NoticeDesignState) {
   });
 }
 
-export default function NoticePdfDocument({ state }: { state: NoticeDesignState }) {
+export default function NoticePdfDocument({ state, contacts }: { state: NoticeDesignState; contacts: CommitteeContacts }) {
   const styles = getPdfStyles(state);
 
   return (
@@ -155,7 +155,7 @@ export default function NoticePdfDocument({ state }: { state: NoticeDesignState 
             Thiruvananthapuram, Kerala, India
           </Text>
           <Text style={styles.footerBottom}>
-            Mobile: +918547136339, +919539516653, +919497007113, Email: techpmj@gmail.com,
+            President: {contacts.president}, Secretary: {contacts.secretary}, Email: techpmj@gmail.com,
             Website: pmjmasjid.vercel.app
           </Text>
         </View>

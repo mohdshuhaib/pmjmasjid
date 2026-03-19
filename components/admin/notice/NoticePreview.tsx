@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { NoticeDesignState } from "./types";
+import { NoticeDesignState, CommitteeContacts } from "./types";
 import { buildReferenceCode, formatDisplayDate } from "./utils";
 import { confirmedByMalayalamMap, LOGO_URL, marginPresetMap, pageDimensionsPx, weightMap } from "./constants";
 
-export default function NoticePreview({ state }: { state: NoticeDesignState }) {
+export default function NoticePreview({ state, contacts }: { state: NoticeDesignState; contacts: CommitteeContacts }) {
   const dims = pageDimensionsPx[state.pageSize][state.orientation];
   const margin = marginPresetMap[state.marginPreset];
 
@@ -99,7 +99,7 @@ export default function NoticePreview({ state }: { state: NoticeDesignState }) {
               Thiruvananthapuram
             </p>
             <p className="text-center text-[5px] md:text-[6px] leading-snug text-slate-600">
-              Mobile: +918547136339, +919539516653, +919497007113, Email: techpmj@gmail.com,
+              President: {contacts.president}, Secretary: {contacts.secretary}, Email: techpmj@gmail.com,
               Website: pmjmasjid.vercel.app
             </p>
           </div>

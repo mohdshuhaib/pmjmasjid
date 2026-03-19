@@ -21,14 +21,15 @@ export function useMalayalamVoiceInput(onTranscript: (text: string) => void) {
     setSupported(true);
     const recognition = new SpeechRecognitionCtor();
     recognition.lang = "ml-IN";
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
       let finalText = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal) {
+        if (result.isFinal && result[0]?.transcript) {
           finalText += result[0].transcript;
         }
       }
@@ -38,26 +39,51 @@ export function useMalayalamVoiceInput(onTranscript: (text: string) => void) {
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
+    recognition.onspeechend = () => {
+      try {
+        recognition.stop();
+      } catch {}
+    };
 
     recognitionRef.current = recognition;
 
     return () => {
       try {
-        recognition.stop();
+        recognition.abort();
       } catch {}
     };
   }, [onTranscript]);
 
-  const start = () => {
+  const start = async () => {
     try {
-      recognitionRef.current?.start();
-    } catch {}
+      const active = document.activeElement as HTMLElement | null;
+      active?.blur();
+
+      const mediaDevices = navigator.mediaDevices;
+      if (mediaDevices?.getUserMedia) {
+        const stream = await mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
+      recognitionRef.current?.abort?.();
+      setTimeout(() => {
+        try {
+          recognitionRef.current?.start();
+        } catch {
+          setIsListening(false);
+        }
+      }, 120);
+    } catch {
+      setIsListening(false);
+    }
   };
 
   const stop = () => {
     try {
-      recognitionRef.current?.stop();
+      recognitionRef.current?.stop?.();
+      recognitionRef.current?.abort?.();
     } catch {}
+    setIsListening(false);
   };
 
   return { supported, isListening, start, stop };

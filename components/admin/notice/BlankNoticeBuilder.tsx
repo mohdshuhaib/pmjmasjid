@@ -1,20 +1,19 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Download, Eye, FileText, Loader2, Settings2, Share2, Type } from "lucide-react";
+import { Download, Eye, Loader2, Settings2, Share2, Type } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
-import NoticePreview from "./NoticePreview";
-import NoticePdfDocument from "./NoticePdfDocument";
-import TypographyCard from "./TypographyCard";
 import TransliterationTextarea from "./TransliterationTextarea";
-import { defaultDesignState } from "./constants";
-import { FieldKey, NoticeDesignState, PageSize, MarginPreset, Orientation, RoleValue, TypographyConfig } from "./types";
-import { buildReferenceCode, sanitizeRefNumber } from "./utils";
+import TypographyCard from "./TypographyCard";
+import BlankNoticePreview from "./BlankNoticePreview";
+import BlankNoticePdfDocument from "./BlankNoticePdfDocument";
+import { defaultBlankNoticeState } from "./constants";
+import { BlankNoticeDesignState, Orientation, PageSize, MarginPreset, RoleValue, TypographyConfig } from "./types";
 import { registerPdfFont } from "./registerPdfFont";
 import { sharePdfOnWhatsApp } from "./share";
 
-export default function PrintableNoticeBuilder() {
-  const [designState, setDesignState] = useState<NoticeDesignState>(defaultDesignState);
+export default function BlankNoticeBuilder() {
+  const [designState, setDesignState] = useState<BlankNoticeDesignState>(defaultBlankNoticeState);
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [lastBlob, setLastBlob] = useState<Blob | null>(null);
@@ -29,7 +28,10 @@ export default function PrintableNoticeBuilder() {
     [designState.pageSize, designState.orientation, designState.marginPreset]
   );
 
-  const updateTypography = (field: FieldKey, next: TypographyConfig) => {
+  const updateTypography = (
+    field: "heading" | "details" | "meta" | "confirmedBy",
+    next: TypographyConfig
+  ) => {
     setDesignState((prev) => ({
       ...prev,
       typography: {
@@ -41,7 +43,7 @@ export default function PrintableNoticeBuilder() {
 
   const generatePdfBlob = async () => {
     registerPdfFont();
-    return await pdf(<NoticePdfDocument state={designState} />).toBlob();
+    return await pdf(<BlankNoticePdfDocument state={designState} />).toBlob();
   };
 
   const handlePdfDownload = async () => {
@@ -54,14 +56,14 @@ export default function PrintableNoticeBuilder() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${buildReferenceCode(designState.refNumber)}.pdf`;
+      link.download = `blank-notice-${Date.now()}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
 
-      setLocalMessage({ type: "success", text: "Notice PDF downloaded successfully." });
+      setLocalMessage({ type: "success", text: "Blank notice PDF downloaded successfully." });
     } catch (error) {
       console.error(error);
-      setLocalMessage({ type: "error", text: "Failed to generate PDF. Check font and logo paths." });
+      setLocalMessage({ type: "error", text: "Failed to generate PDF." });
     } finally {
       setDownloading(false);
     }
@@ -71,26 +73,20 @@ export default function PrintableNoticeBuilder() {
     try {
       setSharing(true);
       setLocalMessage(null);
-
       const blob = lastBlob ?? (await generatePdfBlob());
       setLastBlob(blob);
 
-      const fileName = `${buildReferenceCode(designState.refNumber)}.pdf`;
-      const text = `${designState.heading}\nRef: ${buildReferenceCode(designState.refNumber)}`;
-
-      const result = await sharePdfOnWhatsApp(blob, fileName, text);
-
-      if (result.mode === "whatsapp-text") {
-        setLocalMessage({
-          type: "success",
-          text: "WhatsApp opened with text. Local PDF attachment is only supported where browser native file sharing is available.",
-        });
-      } else {
-        setLocalMessage({ type: "success", text: "Share dialog opened successfully." });
-      }
+      const result = await sharePdfOnWhatsApp(blob, `blank-notice-${Date.now()}.pdf`, designState.heading);
+      setLocalMessage({
+        type: "success",
+        text:
+          result.mode === "whatsapp-text"
+            ? "WhatsApp opened with text. Local PDF attachment depends on browser native file sharing support."
+            : "Share dialog opened successfully.",
+      });
     } catch (error) {
       console.error(error);
-      setLocalMessage({ type: "error", text: "Unable to open WhatsApp share." });
+      setLocalMessage({ type: "error", text: "Unable to open share." });
     } finally {
       setSharing(false);
     }
@@ -101,10 +97,11 @@ export default function PrintableNoticeBuilder() {
       <div className="space-y-6">
         {localMessage && (
           <div
-            className={`p-4 rounded-xl border ${localMessage.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-red-50 text-red-800 border-red-200"
-              }`}
+            className={`p-4 rounded-xl border ${
+              localMessage.type === "success"
+                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                : "bg-red-50 text-red-800 border-red-200"
+            }`}
           >
             {localMessage.text}
           </div>
@@ -113,26 +110,26 @@ export default function PrintableNoticeBuilder() {
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 space-y-6">
           <div className="flex items-center gap-3">
             <Settings2 className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-xl font-bold text-slate-900">Notice Setup</h2>
+            <h2 className="text-xl font-bold text-slate-900">Blank Notice Setup</h2>
           </div>
 
           <TransliterationTextarea
-            label="Notice Heading"
+            label="Heading"
             value={designState.heading}
             onChange={(heading) => setDesignState((prev) => ({ ...prev, heading }))}
           />
 
           <TransliterationTextarea
-            label="Detailed Notice Message"
+            label="Detailed Content"
             value={designState.details}
             onChange={(details) => setDesignState((prev) => ({ ...prev, details }))}
             multiline
-            rows={8}
+            rows={10}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Notice Date</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Date</label>
               <input
                 type="date"
                 value={designState.noticeDate}
@@ -159,18 +156,6 @@ export default function PrintableNoticeBuilder() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Reference Number</label>
-              <input
-                type="text"
-                value={designState.refNumber}
-                onChange={(e) => setDesignState((prev) => ({ ...prev, refNumber: sanitizeRefNumber(e.target.value) }))}
-                placeholder="001"
-                className="w-full border border-slate-300 bg-white rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-              />
-              <p className="mt-1 text-xs text-slate-500">Final format: {buildReferenceCode(designState.refNumber)}</p>
-            </div>
-
-            <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Page Size</label>
               <select
                 value={designState.pageSize}
@@ -181,9 +166,7 @@ export default function PrintableNoticeBuilder() {
                 <option value="A3">A3</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Orientation</label>
               <select
@@ -195,19 +178,19 @@ export default function PrintableNoticeBuilder() {
                 <option value="landscape">Landscape</option>
               </select>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Margins</label>
-              <select
-                value={designState.marginPreset}
-                onChange={(e) => setDesignState((prev) => ({ ...prev, marginPreset: e.target.value as MarginPreset }))}
-                className="w-full border border-slate-300 bg-white rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
-              >
-                <option value="narrow">Narrow</option>
-                <option value="standard">Standard</option>
-                <option value="wide">Wide</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Margins</label>
+            <select
+              value={designState.marginPreset}
+              onChange={(e) => setDesignState((prev) => ({ ...prev, marginPreset: e.target.value as MarginPreset }))}
+              className="w-full border border-slate-300 bg-white rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+            >
+              <option value="narrow">Narrow</option>
+              <option value="standard">Standard</option>
+              <option value="wide">Wide</option>
+            </select>
           </div>
         </div>
 
@@ -217,12 +200,12 @@ export default function PrintableNoticeBuilder() {
             <h2 className="text-xl font-bold text-slate-900">Typography Controls</h2>
           </div>
 
-          <TypographyCard field="heading" label="Heading" config={designState.typography.heading} onChange={updateTypography} />
-          <TypographyCard field="details" label="Detailed Message" config={designState.typography.details} onChange={updateTypography} />
-          <TypographyCard field="meta" label="Reference + Date" config={designState.typography.meta} onChange={updateTypography} />
-          <TypographyCard field="confirmedBy" label="Confirmed By" config={designState.typography.confirmedBy} onChange={updateTypography} />
+          <TypographyCard field="heading" label="Heading" config={designState.typography.heading} onChange={updateTypography as any} />
+          <TypographyCard field="details" label="Detailed Content" config={designState.typography.details} onChange={updateTypography as any} />
+          <TypographyCard field="meta" label="Date" config={designState.typography.meta} onChange={updateTypography as any} />
+          <TypographyCard field="confirmedBy" label="Confirmed By" config={designState.typography.confirmedBy} onChange={updateTypography as any} />
 
-          <div className="pt-2 flex flex-col  gap-2">
+          <div className="pt-2 flex flex-col gap-2">
             <button
               type="button"
               onClick={handlePdfDownload}
@@ -245,7 +228,7 @@ export default function PrintableNoticeBuilder() {
 
             <button
               type="button"
-              onClick={() => setDesignState(defaultDesignState)}
+              onClick={() => setDesignState(defaultBlankNoticeState)}
               className="px-6 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 font-semibold text-slate-700"
             >
               Reset Layout
@@ -264,7 +247,7 @@ export default function PrintableNoticeBuilder() {
             {previewScaleLabel}
           </span>
         </div>
-        <NoticePreview state={designState} />
+        <BlankNoticePreview state={designState} />
       </div>
     </div>
   );
