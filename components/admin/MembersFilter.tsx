@@ -8,8 +8,10 @@ interface MembersFilterProps {
   filteredCount: number;
   searchQuery: string;
   setSearchQuery: (val: string) => void;
-  statusFilter: "all" | "active" | "deceased" | "fee_exempt";
-  setStatusFilter: (val: "all" | "active" | "deceased" | "fee_exempt") => void;
+  statusFilter: "all" | "active" | "deceased" | "fee_exempt" | "fee_disc";
+  setStatusFilter: (
+    val: "all" | "active" | "deceased" | "fee_exempt" | "fee_disc"
+  ) => void;
   maritalFilter: "all" | "married" | "single";
   setMaritalFilter: (val: "all" | "married" | "single") => void;
   onExport: () => void;
@@ -24,7 +26,7 @@ export default function MembersFilter({
   setStatusFilter,
   maritalFilter,
   setMaritalFilter,
-  onExport
+  onExport,
 }: MembersFilterProps) {
   return (
     <div className="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 pb-4 shadow-sm mb-6 pt-2">
@@ -34,12 +36,15 @@ export default function MembersFilter({
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Members Directory</h1>
-            <p className="text-sm text-slate-500">Showing {filteredCount} of {totalMembers} total members</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+              Members Directory
+            </h1>
+            <p className="text-sm text-slate-500">
+              Showing {filteredCount} of {totalMembers} total members
+            </p>
           </div>
         </div>
 
-        {/* --- NEW: EXPORT BUTTON --- */}
         <button
           onClick={onExport}
           className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-emerald-600/20"
@@ -50,7 +55,6 @@ export default function MembersFilter({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-        {/* Search Bar */}
         <div className="md:col-span-6 relative">
           <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
           <input
@@ -62,7 +66,6 @@ export default function MembersFilter({
           />
         </div>
 
-        {/* Filters */}
         <div className="md:col-span-3">
           <select
             value={statusFilter}
@@ -71,8 +74,9 @@ export default function MembersFilter({
           >
             <option value="all">All Statuses</option>
             <option value="active">🟢 Active Members</option>
-            <option value="deceased">⚪ Deceased Members</option>
+            <option value="fee_disc">🟡 Fee Discount Members</option>
             <option value="fee_exempt">🔵 Fee Exempt Members</option>
+            <option value="deceased">⚪ Deceased Members</option>
           </select>
         </div>
 

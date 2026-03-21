@@ -14,7 +14,7 @@ export default function MembersList() {
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "deceased" | "fee_exempt">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "deceased" | "fee_exempt" | "fee_disc">("all");
   const [maritalFilter, setMaritalFilter] = useState<"all" | "married" | "single">("all");
 
   // Modals

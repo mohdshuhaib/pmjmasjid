@@ -1,18 +1,34 @@
 "use client";
-
 import React, { useState } from "react";
-import { UploadCloud, UserPlus, CheckCircle2, AlertCircle, Link as LinkIcon } from "lucide-react";
-import { addIndividualMember, processCSVUpload, CSVMemberRow } from "@/app/admin/actions";
-import Conversion from "@/components/admin/Conversion"; // Import the new component
+import {
+  UploadCloud,
+  UserPlus,
+  CheckCircle2,
+  AlertCircle,
+  Link as LinkIcon,
+} from "lucide-react";
+import {
+  addIndividualMember,
+  processCSVUpload,
+  CSVMemberRow,
+} from "@/app/admin/actions";
+import Conversion from "@/components/admin/Conversion";
 import AddWidow from "@/components/admin/AddWidow";
 
 export default function ManageMembers() {
-  const [activeTab, setActiveTab] = useState<"individual" | "csv" | "conversion" | "widow">("individual");
+  const [activeTab, setActiveTab] = useState<
+    "individual" | "csv" | "conversion" | "widow"
+  >("individual");
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  const handleIndividualSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleIndividualSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
@@ -21,11 +37,15 @@ export default function ManageMembers() {
     const result = await addIndividualMember(formData);
 
     if (result.success) {
-      setMessage({ type: 'success', text: "Member added successfully!" });
+      setMessage({ type: "success", text: "Member added successfully!" });
       (e.target as HTMLFormElement).reset();
     } else {
-      setMessage({ type: 'error', text: result.error || "Failed to add member." });
+      setMessage({
+        type: "error",
+        text: result.error || "Failed to add member.",
+      });
     }
+
     setLoading(false);
   };
 
@@ -37,24 +57,34 @@ export default function ManageMembers() {
     setMessage(null);
 
     const reader = new FileReader();
+
     reader.onload = async (event) => {
       const text = event.target?.result as string;
-      const rows = text.split('\n').filter(row => row.trim().length > 0);
+      const rows = text.split("\n").filter((row) => row.trim().length > 0);
 
       const parsedData: CSVMemberRow[] = [];
-      const startIndex = rows[0].toLowerCase().includes('name') ? 1 : 0;
+      const startIndex = rows[0].toLowerCase().includes("name") ? 1 : 0;
 
       for (let i = startIndex; i < rows.length; i++) {
-        // Advanced Split: Ignores commas inside double quotes (for addresses)
-        const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/(^"|"$)/g, '').trim());
+        const cols = rows[i]
+          .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+          .map((s) => s.replace(/(^"|"$)/g, "").trim());
 
         if (cols.length >= 5) {
           const statusValue = cols[10]?.toLowerCase().trim();
 
-          const status =
-            statusValue === "deceased" || statusValue === "fee_exempt"
-              ? (statusValue as "deceased" | "fee_exempt")
-              : "active";
+          const allowedStatuses: CSVMemberRow["status"][] = [
+            "active",
+            "deceased",
+            "fee_exempt",
+            "fee_disc",
+          ];
+
+          const status = allowedStatuses.includes(
+            statusValue as CSVMemberRow["status"]
+          )
+            ? (statusValue as CSVMemberRow["status"])
+            : "active";
 
           parsedData.push({
             name: cols[0],
@@ -67,7 +97,7 @@ export default function ManageMembers() {
             arrears: cols[7] || "0",
             book_no: cols[8] || "",
             page_no: cols[9] || "",
-            status: status
+            status,
           });
         }
       }
@@ -75,13 +105,17 @@ export default function ManageMembers() {
       const result = await processCSVUpload(parsedData);
 
       if (result.errors.length === 0) {
-        setMessage({ type: 'success', text: `Successfully uploaded ${result.created} members!` });
+        setMessage({
+          type: "success",
+          text: `Successfully uploaded ${result.created} members!`,
+        });
       } else {
         setMessage({
-          type: 'error',
-          text: `Created ${result.created}, but encountered ${result.errors.length} errors. First error: ${result.errors[0]}`
+          type: "error",
+          text: `Created ${result.created}, but encountered ${result.errors.length} errors. First error: ${result.errors[0]}`,
         });
       }
+
       setLoading(false);
       e.target.value = "";
     };
@@ -93,49 +127,75 @@ export default function ManageMembers() {
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Manage Members</h1>
-        <p className="text-slate-500 mt-1">Add detailed member profiles, bulk upload, or convert dependents.</p>
+        <p className="text-slate-500 mt-1">
+          Add detailed member profiles, bulk upload, or convert dependents.
+        </p>
       </div>
 
       <div className="flex gap-4 border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab("individual")}
-          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${activeTab === 'individual' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-800'}`}
+          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${
+            activeTab === "individual"
+              ? "text-emerald-600 border-b-2 border-emerald-600"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
         >
           Add Individual
         </button>
+
         <button
           onClick={() => setActiveTab("csv")}
-          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${activeTab === 'csv' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-800'}`}
+          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${
+            activeTab === "csv"
+              ? "text-emerald-600 border-b-2 border-emerald-600"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
         >
           Bulk Upload CSV
         </button>
+
         <button
           onClick={() => setActiveTab("conversion")}
-          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap flex items-center gap-1 ${activeTab === 'conversion' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 hover:text-slate-800'}`}
+          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap flex items-center gap-1 ${
+            activeTab === "conversion"
+              ? "text-emerald-600 border-b-2 border-emerald-600"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
         >
           <LinkIcon className="w-4 h-4" /> Convert to Head
         </button>
+
         <button
           onClick={() => setActiveTab("widow")}
-          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${activeTab === 'widow'
-            ? 'text-emerald-600 border-b-2 border-emerald-600'
-            : 'text-slate-500 hover:text-slate-800'
-            }`}
+          className={`pb-3 px-2 font-medium transition-all whitespace-nowrap ${
+            activeTab === "widow"
+              ? "text-emerald-600 border-b-2 border-emerald-600"
+              : "text-slate-500 hover:text-slate-800"
+          }`}
         >
           Add Widow
         </button>
       </div>
 
       {message && activeTab !== "conversion" && (
-        <div className={`p-4 rounded-xl flex items-center gap-3 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
+        <div
+          className={`p-4 rounded-xl flex items-center gap-3 ${
+            message.type === "success"
+              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              : "bg-red-50 text-red-800 border border-red-200"
+          }`}
+        >
+          {message.type === "success" ? (
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 shrink-0" />
+          )}
           {message.text}
         </div>
       )}
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
-
-        {/* --- INDIVIDUAL TAB --- */}
         {activeTab === "individual" && (
           <form onSubmit={handleIndividualSubmit} className="space-y-8">
             <div className="flex items-center gap-2 text-slate-800 border-b border-slate-100 pb-4">
@@ -145,44 +205,97 @@ export default function ManageMembers() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Full Name *</label>
-                <input type="text" name="name" required className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Mohammed Ali" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. Mohammed Ali"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Father's Name</label>
-                <input type="text" name="father_name" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Abdul Rahman" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Father's Name
+                </label>
+                <input
+                  type="text"
+                  name="father_name"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. Abdul Rahman"
+                />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">House Address</label>
-                <textarea name="address" rows={2} className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Enter full address..."></textarea>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  House Address
+                </label>
+                <textarea
+                  name="address"
+                  rows={2}
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="Enter full address..."
+                ></textarea>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">MR Number (Must be unique) *</label>
-                <input type="number" name="mr_no" required className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. 1045" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  MR Number (Must be unique) *
+                </label>
+                <input
+                  type="number"
+                  name="mr_no"
+                  required
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. 1045"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
-                <select name="status" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Status
+                </label>
+                <select
+                  name="status"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                >
                   <option value="active">Active</option>
                   <option value="deceased">Deceased</option>
                   <option value="fee_exempt">Fee Exempt</option>
+                  <option value="fee_disc">Fee Discount</option>
                 </select>
               </div>
             </div>
 
             <div className="p-6 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">PMJ Number (Heads Only)</label>
-                <input type="number" name="pmj_no" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" placeholder="Leave blank if dependent" />
-                <p className="text-xs text-slate-500 mt-2">Providing this generates a login account automatically.</p>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  PMJ Number (Heads Only)
+                </label>
+                <input
+                  type="number"
+                  name="pmj_no"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                  placeholder="Leave blank if dependent"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  Providing this generates a login account automatically.
+                </p>
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Head PMJ Number (Dependents Only)</label>
-                <input type="number" name="head_pmj_no" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" placeholder="Father/Husband's PMJ No" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Head PMJ Number (Dependents Only)
+                </label>
+                <input
+                  type="number"
+                  name="head_pmj_no"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                  placeholder="Father/Husband's PMJ No"
+                />
               </div>
             </div>
 
@@ -192,30 +305,66 @@ export default function ManageMembers() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Book No</label>
-                <input type="text" name="book_no" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. B-12" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Book No
+                </label>
+                <input
+                  type="text"
+                  name="book_no"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. B-12"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Page No</label>
-                <input type="text" name="page_no" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. 45" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Page No
+                </label>
+                <input
+                  type="text"
+                  name="page_no"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. 45"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Annual Subs (₹/NA)</label>
-                <input type="text" name="annual_subs" defaultValue="0" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. 500 or NA" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Annual Subs (₹)
+                </label>
+                <input
+                  type="text"
+                  name="annual_subs"
+                  defaultValue="0"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. 500"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Arrears (₹/NA)</label>
-                <input type="text" name="arrears" defaultValue="0" className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none" placeholder="e.g. 1000 or NA" />
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Arrears (₹)
+                </label>
+                <input
+                  type="text"
+                  name="arrears"
+                  defaultValue="0"
+                  className="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-red-500 outline-none"
+                  placeholder="e.g. 1000"
+                />
               </div>
             </div>
 
-            <button disabled={loading} type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-8 rounded-xl shadow-md transition-all disabled:opacity-50 w-full md:w-auto">
+            <button
+              disabled={loading}
+              type="submit"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-8 rounded-xl shadow-md transition-all disabled:opacity-50 w-full md:w-auto"
+            >
               {loading ? "Saving to Database..." : "Save Member Details"}
             </button>
           </form>
         )}
 
-        {/* --- CSV TAB --- */}
         {activeTab === "csv" && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 text-slate-800 mb-6">
@@ -226,11 +375,12 @@ export default function ManageMembers() {
             <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center flex flex-col items-center">
               <UploadCloud className="w-12 h-12 text-slate-400 mb-4" />
               <p className="text-slate-600 mb-4 max-w-lg">
-                Ensure your CSV file matches exactly this 11-column order. Enclose addresses with commas inside double quotes (e.g. <code className="text-slate-800 bg-slate-200 px-1">"Perunguzhi, Kerala"</code>).
+                Ensure your CSV file matches exactly this 11-column order.
               </p>
 
               <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 text-xs font-mono text-slate-600 text-left overflow-x-auto w-full">
-                name, father_name, address, pmj_no, mr_no, head_pmj_no, annual_subs, arrears, book_no, page_no, status
+                name, father_name, address, pmj_no, mr_no, head_pmj_no,
+                annual_subs, arrears, book_no, page_no, status
               </div>
 
               <label className="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-6 rounded-xl shadow-sm transition-all">
@@ -247,16 +397,8 @@ export default function ManageMembers() {
           </div>
         )}
 
-        {/* --- CONVERSION TAB --- */}
-        {activeTab === "conversion" && (
-          <Conversion />
-        )}
-
-        {/* --- WIDOW TAB --- */}
-        {activeTab === "widow" && (
-          <AddWidow />
-        )}
-
+        {activeTab === "conversion" && <Conversion />}
+        {activeTab === "widow" && <AddWidow />}
       </div>
     </div>
   );

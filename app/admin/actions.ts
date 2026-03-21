@@ -23,7 +23,7 @@ export interface CSVMemberRow {
   arrears: string;
   book_no: string;
   page_no: string;
-  status: 'active' | 'deceased' | 'fee_exempt';
+  status: 'active' | 'deceased' | 'fee_exempt' | 'fee_disc';
 }
 
 // 1. Bulk Process CSV
@@ -37,13 +37,14 @@ export async function processCSVUpload(parsedData: CSVMemberRow[]) {
       // If user is a Head (has a PMJ No), create an Auth account
       if (row.pmj_no) {
         const email = `${row.pmj_no}@pmjmasjid.com`;
-        const password = `00${row.pmj_no}00${row.mr_no}`; // Updated to use MR_NO
+        const password = `00${row.pmj_no}00${row.mr_no}`;
 
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: email,
-          password: password,
-          email_confirm: true,
-        });
+        const { data: authData, error: authError } =
+          await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+          });
 
         if (authError && !authError.message.includes("already registered")) {
           throw new Error(`Auth Error for PMJ ${row.pmj_no}: ${authError.message}`);
@@ -52,8 +53,7 @@ export async function processCSVUpload(parsedData: CSVMemberRow[]) {
         if (authData?.user) authId = authData.user.id;
       }
 
-      // Insert into the new public.members table structure
-      const { error: dbError } = await supabaseAdmin.from('members').insert({
+      const { error: dbError } = await supabaseAdmin.from("members").insert({
         auth_id: authId,
         name: row.name,
         father_name: row.father_name || null,
@@ -61,21 +61,21 @@ export async function processCSVUpload(parsedData: CSVMemberRow[]) {
         pmj_no: row.pmj_no,
         mr_no: row.mr_no,
         head_pmj_no: row.head_pmj_no,
-        annual_subs: row.annual_subs || 0,
-        arrears: row.arrears || 0,
+        annual_subs: row.annual_subs || "0",
+        arrears: row.arrears || "0",
         book_no: row.book_no || null,
         page_no: row.page_no || null,
-        status: row.status || 'active'
+        status: row.status || "active",
       });
 
       if (dbError) {
-        // Handle duplicate MR NO gracefully
-        if (dbError.code === '23505') throw new Error(`MR Number ${row.mr_no} already exists.`);
+        if (dbError.code === "23505") {
+          throw new Error(`MR Number ${row.mr_no} already exists.`);
+        }
         throw new Error(`DB Error for MR ${row.mr_no}: ${dbError.message}`);
       }
 
       results.created++;
-
     } catch (err: any) {
       results.errors.push(err.message);
     }
@@ -86,18 +86,33 @@ export async function processCSVUpload(parsedData: CSVMemberRow[]) {
 
 // 2. Add Individual Member
 export async function addIndividualMember(formData: FormData) {
+  const statusValue = (formData.get("status") as string) || "active";
+
+  const allowedStatuses: Array<CSVMemberRow["status"]> = [
+    "active",
+    "deceased",
+    "fee_exempt",
+    "fee_disc",
+  ];
+
   const row: CSVMemberRow = {
     name: formData.get("name") as string,
     father_name: formData.get("father_name") as string,
     address: formData.get("address") as string,
-    pmj_no: formData.get("pmj_no") ? parseInt(formData.get("pmj_no") as string) : null,
+    pmj_no: formData.get("pmj_no")
+      ? parseInt(formData.get("pmj_no") as string)
+      : null,
     mr_no: parseInt(formData.get("mr_no") as string),
-    head_pmj_no: formData.get("head_pmj_no") ? parseInt(formData.get("head_pmj_no") as string) : null,
-    annual_subs: (formData.get("annual_subs") as string) || '0',
-    arrears: (formData.get("arrears") as string) || '0',
+    head_pmj_no: formData.get("head_pmj_no")
+      ? parseInt(formData.get("head_pmj_no") as string)
+      : null,
+    annual_subs: (formData.get("annual_subs") as string) || "0",
+    arrears: (formData.get("arrears") as string) || "0",
     book_no: formData.get("book_no") as string,
     page_no: formData.get("page_no") as string,
-    status: (formData.get("status") as 'active' | 'deceased' | 'fee_exempt' ) || 'active'
+    status: allowedStatuses.includes(statusValue as CSVMemberRow["status"])
+      ? (statusValue as CSVMemberRow["status"])
+      : "active",
   };
 
   const result = await processCSVUpload([row]);
@@ -105,6 +120,7 @@ export async function addIndividualMember(formData: FormData) {
   if (result.errors.length > 0) {
     return { success: false, error: result.errors[0] };
   }
+
   return { success: true };
 }
 
@@ -413,57 +429,63 @@ export async function markPaymentAsReadAction(paymentId: string) {
 
 export async function executeYearlyRolloverAction(password: string) {
   try {
-    // FIX: Await cookies() because it is asynchronous in Next.js 15
     const cookieStore = await cookies();
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) { return cookieStore.get(name)?.value; },
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
         },
       }
     );
 
-    // 1. Get current logged in admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !user.email) return { success: false, error: "Unauthorized access." };
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    // 2. VERIFY PASSWORD - Re-authenticate to ensure they are the real admin
+    if (!user || !user.email) {
+      return { success: false, error: "Unauthorized access." };
+    }
+
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: user.email,
-      password: password
+      password,
     });
 
     if (authError) {
       return { success: false, error: "Incorrect password. Rollover aborted." };
     }
 
-    // 3. Trigger the Financial Rollover
-    const { error: rpcError } = await supabaseAdmin.rpc('process_yearly_rollover', {
+    const { error: rpcError } = await supabaseAdmin.rpc("process_yearly_rollover", {
       head_amount: 1250,
-      dependent_amount: 200
+      dependent_amount: 200,
+      discounted_amount: 200,
+      exempt_amount: 0,
+      deceased_amount: 0,
     });
 
     if (rpcError) throw rpcError;
 
-    // 4. Log the SUCCESS
-    await supabaseAdmin.from('logs').insert({
-      event_type: 'YEARLY_ROLLOVER',
-      status: 'SUCCESS',
-      message: 'Manual yearly financial rollover completed successfully.'
+    await supabaseAdmin.from("logs").insert({
+      event_type: "YEARLY_ROLLOVER",
+      status: "SUCCESS",
+      message: "Manual yearly financial rollover completed successfully.",
     });
 
     return { success: true };
-
   } catch (err: any) {
     console.error("Manual Rollover Error:", err);
-    // Log the ERROR
-    await supabaseAdmin.from('logs').insert({
-      event_type: 'YEARLY_ROLLOVER',
-      status: 'ERROR',
-      message: `Manual rollover failed: ${err.message}`
+
+    await supabaseAdmin.from("logs").insert({
+      event_type: "YEARLY_ROLLOVER",
+      status: "ERROR",
+      message: `Manual rollover failed: ${err.message}`,
     });
+
     return { success: false, error: err.message };
   }
 }
