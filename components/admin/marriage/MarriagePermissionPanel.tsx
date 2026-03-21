@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Download, FileText, Settings } from "lucide-react";
+import { Download, FileText, Loader2, Settings } from "lucide-react";
 import {
   createA4Pdf,
   downloadBlankTemplatePdf,
@@ -36,7 +36,6 @@ interface PermissionData {
   nikahPlace: string;
   contributionAmount: string;
 }
-
 
 const demoGroom = (): PersonBlock => ({
   name: "മുഹമ്മദ് ഷമീർ",
@@ -304,6 +303,9 @@ export default function MarriagePermissionPanel() {
     contributionAmount: "5000",
   });
 
+  const [isGeneratingFilledPdf, setIsGeneratingFilledPdf] = useState(false);
+  const [isDownloadingBlankPdf, setIsDownloadingBlankPdf] = useState(false);
+
   const preview = useMemo(
     () => ({
       toCombined1: data.toMasjidName,
@@ -327,6 +329,8 @@ export default function MarriagePermissionPanel() {
   };
 
   const generateFilledPdf = async () => {
+    setIsGeneratingFilledPdf(true);
+
     try {
       const pdf = createA4Pdf("portrait");
       const pageWidth = 210;
@@ -442,7 +446,6 @@ export default function MarriagePermissionPanel() {
         );
       };
 
-      // top
       await drawHybridText({
         text: data.refNo,
         x: 23.6,
@@ -461,7 +464,6 @@ export default function MarriagePermissionPanel() {
         maxWidth: 25,
       });
 
-      // To
       await drawHybridText({
         text: preview.toCombined1,
         x: 40,
@@ -481,7 +483,6 @@ export default function MarriagePermissionPanel() {
         imageFontPx: 20,
       });
 
-      // Groom block
       await drawHybridText({
         text: data.groom.name,
         x: 26,
@@ -590,7 +591,6 @@ export default function MarriagePermissionPanel() {
         imageFontPx: 17,
       });
 
-      // Bride block
       await drawHybridText({
         text: data.bride.name,
         x: 123,
@@ -699,7 +699,6 @@ export default function MarriagePermissionPanel() {
         imageFontPx: 17,
       });
 
-      // bottom details
       await drawHybridText({
         text: data.nikahDate,
         x: 57,
@@ -739,10 +738,14 @@ export default function MarriagePermissionPanel() {
     } catch (error) {
       console.error(error);
       alert("Failed to generate marriage permission PDF.");
+    } finally {
+      setIsGeneratingFilledPdf(false);
     }
   };
 
   const downloadBlankPdf = async () => {
+    setIsDownloadingBlankPdf(true);
+
     try {
       await downloadBlankTemplatePdf({
         templatePath: "/mr-permission.png",
@@ -752,6 +755,8 @@ export default function MarriagePermissionPanel() {
     } catch (error) {
       console.error(error);
       alert("Failed to download blank PDF.");
+    } finally {
+      setIsDownloadingBlankPdf(false);
     }
   };
 
@@ -896,19 +901,39 @@ export default function MarriagePermissionPanel() {
           <button
             type="button"
             onClick={generateFilledPdf}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+            disabled={isGeneratingFilledPdf || isDownloadingBlankPdf}
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-500 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
           >
-            <Download className="w-5 h-5" />
-            Download Filled PDF
+            {isGeneratingFilledPdf ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Generating Filled PDF...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5" />
+                Download Filled PDF
+              </>
+            )}
           </button>
 
           <button
             type="button"
             onClick={downloadBlankPdf}
-            className="w-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
+            disabled={isGeneratingFilledPdf || isDownloadingBlankPdf}
+            className="w-full bg-white hover:bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed text-slate-900 border border-slate-300 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
           >
-            <FileText className="w-5 h-5" />
-            Download Blank PDF
+            {isDownloadingBlankPdf ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Downloading Blank PDF...
+              </>
+            ) : (
+              <>
+                <FileText className="w-5 h-5" />
+                Download Blank PDF
+              </>
+            )}
           </button>
         </div>
       </div>
