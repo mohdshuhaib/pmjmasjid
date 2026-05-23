@@ -27,7 +27,7 @@ import {
 import { createBrowserClient } from "@supabase/ssr";
 import {
   ensureMalayalamFontLoaded,
-  generateTokenPdfFromRenderedPages,
+  generatePdfFromRenderedPages,
   getListSubtitle,
   getSafeFileName,
   MASJID_TITLE_ML,
@@ -55,6 +55,10 @@ interface SourceRow {
 
 type SourceType = "members" | "widows";
 type PreviewMode = "tokens" | "list";
+type PdfJobType = "tokens" | "list";
+
+const A4_PREVIEW_WIDTH = 900;
+const A4_PREVIEW_HEIGHT = Math.round((A4_PREVIEW_WIDTH * 297) / 210);
 
 export default function TokenGeneratorPanel() {
   const [supabase] = useState(() =>
@@ -76,7 +80,13 @@ export default function TokenGeneratorPanel() {
   const [rows, setRows] = useState<SourceRow[]>([]);
   const [loadingRows, setLoadingRows] = useState(true);
   const [loadingHeaders, setLoadingHeaders] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState<PdfJobType | null>(null);
+  const [pdfProgress, setPdfProgress] = useState<{
+    percent: number;
+    message: string;
+    currentPage: number;
+    totalPages: number;
+  } | null>(null);
 
   const [startPmjNo, setStartPmjNo] = useState("1");
   const [endPmjNo, setEndPmjNo] = useState("");
@@ -122,14 +132,15 @@ export default function TokenGeneratorPanel() {
     const el = previewWrapRef.current;
     if (!el) return;
 
-    const BASE_WIDTH = 900;
-
     const updateScale = () => {
-      const width = el.clientWidth || BASE_WIDTH;
-
-      // keep full page visible more properly
-      const nextScale =
-        width >= BASE_WIDTH ? 1 : Math.max(0.42, Math.min(1, width / BASE_WIDTH));
+      const availableWidth = el.clientWidth || A4_PREVIEW_WIDTH;
+      const availableHeight =
+        typeof window === "undefined"
+          ? A4_PREVIEW_HEIGHT
+          : Math.max(520, window.innerHeight - 250);
+      const widthScale = availableWidth / A4_PREVIEW_WIDTH;
+      const heightScale = availableHeight / A4_PREVIEW_HEIGHT;
+      const nextScale = Math.max(0.34, Math.min(1, widthScale, heightScale));
 
       setPreviewScale(nextScale);
     };
@@ -138,8 +149,12 @@ export default function TokenGeneratorPanel() {
 
     const observer = new ResizeObserver(updateScale);
     observer.observe(el);
+    window.addEventListener("resize", updateScale);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
   }, []);
 
   useEffect(() => {
@@ -338,7 +353,12 @@ export default function TokenGeneratorPanel() {
     }
   }, [previewPageCount, previewPageIndex]);
 
-  const handleGeneratePdf = async () => {
+  const waitForPaint = () =>
+    new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve());
+    });
+
+  const handleGeneratePdf = async (jobType: PdfJobType) => {
     if (!selectedHeaderId) {
       showMessage("error", "Please select a header.");
       return;
@@ -349,19 +369,24 @@ export default function TokenGeneratorPanel() {
       return;
     }
 
-    const tokenPageElements = hiddenTokenRefs.current.filter(
-      Boolean
-    ) as HTMLElement[];
-    const listPageElements = hiddenListRefs.current.filter(
-      Boolean
-    ) as HTMLElement[];
+    const pageElements =
+      jobType === "tokens"
+        ? (hiddenTokenRefs.current.slice(0, tokenPages.length).filter(Boolean) as HTMLElement[])
+        : (hiddenListRefs.current.slice(0, listPages.length).filter(Boolean) as HTMLElement[]);
 
-    if (tokenPageElements.length === 0 || listPageElements.length === 0) {
+    if (pageElements.length === 0) {
       showMessage("error", "Printable pages are not ready yet.");
       return;
     }
 
-    setGenerating(true);
+    setGenerating(jobType);
+    setPdfProgress({
+      percent: 1,
+      message: "Getting printable pages ready...",
+      currentPage: 0,
+      totalPages: pageElements.length,
+    });
+    await waitForPaint();
 
     try {
       await ensureMalayalamFontLoaded();
@@ -369,20 +394,39 @@ export default function TokenGeneratorPanel() {
       const safeHeader = getSafeFileName(selectedHeaderLabel);
       const safeSource = sourceType === "members" ? "Members" : "Widows";
       const safeLayout = layoutOption.replace("x", "_");
+      const documentLabel = jobType === "tokens" ? "token" : "list";
+      const fileName =
+        jobType === "tokens"
+          ? `Token_${safeSource}_${safeHeader}_${safeLayout}.pdf`
+          : `Token_List_${safeSource}_${safeHeader}.pdf`;
 
-      await generateTokenPdfFromRenderedPages({
-        tokenPageElements,
-        listPageElements,
-        fileName: `Token_${safeSource}_${safeHeader}_${safeLayout}.pdf`,
+      await generatePdfFromRenderedPages({
+        pageElements,
+        documentLabel,
+        fileName,
+        onProgress: (progress) => {
+          setPdfProgress(progress);
+        },
       });
 
-      showMessage("success", "Token PDF with list generated successfully.");
+      showMessage(
+        "success",
+        jobType === "tokens"
+          ? "Token PDF generated successfully."
+          : "List PDF generated successfully."
+      );
     } catch (error) {
       console.error(error);
-      showMessage("error", "Failed to generate token PDF.");
+      showMessage(
+        "error",
+        jobType === "tokens"
+          ? "Failed to generate token PDF."
+          : "Failed to generate list PDF."
+      );
     }
 
-    setGenerating(false);
+    setGenerating(null);
+    window.setTimeout(() => setPdfProgress(null), 1200);
   };
 
   return (
@@ -613,19 +657,61 @@ export default function TokenGeneratorPanel() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleGeneratePdf}
-              disabled={generating || loadingRows || loadingHeaders}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-            >
-              {generating ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Download className="w-5 h-5" />
-              )}
-              Download Token PDF + List
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleGeneratePdf("tokens")}
+                disabled={!!generating || loadingRows || loadingHeaders}
+                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                {generating === "tokens" ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Download className="w-5 h-5" />
+                )}
+                Download Token PDF
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleGeneratePdf("list")}
+                disabled={!!generating || loadingRows || loadingHeaders}
+                className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                {generating === "list" ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <FileText className="w-5 h-5" />
+                )}
+                Download List PDF
+              </button>
+            </div>
+
+            {pdfProgress && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3 text-sm">
+                  <div>
+                    <div className="font-bold text-slate-900">
+                      {pdfProgress.message}
+                    </div>
+                    <div className="text-slate-500 mt-0.5">
+                      {pdfProgress.currentPage > 0
+                        ? `Page ${pdfProgress.currentPage} of ${pdfProgress.totalPages}`
+                        : `${pdfProgress.totalPages} pages queued`}
+                    </div>
+                  </div>
+                  <div className="font-black text-emerald-700">
+                    {Math.round(pdfProgress.percent)}%
+                  </div>
+                </div>
+                <div className="h-2.5 rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-emerald-600 transition-all duration-300"
+                    style={{ width: `${pdfProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {message && (
@@ -707,20 +793,20 @@ export default function TokenGeneratorPanel() {
                 No records found for the selected PMJ range.
               </div>
             ) : (
-              <div ref={previewWrapRef} className="w-full overflow-x-auto">
+              <div ref={previewWrapRef} className="w-full overflow-auto">
                 <div
-                  className="mx-auto flex justify-center"
+                  className="mx-auto relative"
                   style={{
-                    minWidth: `${900 * previewScale}px`,
+                    width: `${A4_PREVIEW_WIDTH * previewScale}px`,
+                    height: `${A4_PREVIEW_HEIGHT * previewScale}px`,
                   }}
                 >
                   <div
-                    className="origin-top"
+                    className="absolute left-0 top-0 origin-top-left"
                     style={{
-                      width: 900,
+                      width: A4_PREVIEW_WIDTH,
+                      height: A4_PREVIEW_HEIGHT,
                       transform: `scale(${previewScale})`,
-                      transformOrigin: "top center",
-                      marginBottom: `${1272 * (1 - previewScale)}px`,
                     }}
                   >
                     {previewMode === "tokens" ? (
@@ -797,7 +883,7 @@ function TokenA4Page({
   const layout = TOKEN_LAYOUTS[layoutOption];
 
   return (
-    <div className="relative w-[900px] aspect-[210/297] bg-white shadow-2xl p-5 font-anek-malayalam overflow-hidden">
+    <div className="relative w-[900px] aspect-[210/297] bg-white shadow-2xl p-6 font-anek-malayalam overflow-hidden">
       <TokenCutMarks layoutOption={layoutOption} />
 
       <div
@@ -1005,8 +1091,25 @@ function ListA4Page({
   pageNumber?: number;
   totalPages?: number;
 }) {
+  const getRowHeightClass = (name: string) => {
+    const length = (name || "").trim().length;
+
+    if (length <= 26) return "min-h-[54px]";
+    if (length <= 46) return "min-h-[73px]";
+    if (length <= 70) return "min-h-[92px]";
+    return "min-h-[108px]";
+  };
+
+  const getNameSizeClass = (name: string) => {
+    const length = (name || "").trim().length;
+
+    if (length <= 46) return "text-[16px]";
+    if (length <= 70) return "text-[14px]";
+    return "text-[12.5px]";
+  };
+
   return (
-    <div className="relative w-[900px] aspect-[210/297] bg-white shadow-2xl px-6 pt-6 pb-10 font-anek-malayalam overflow-hidden">
+    <div className="relative w-[900px] aspect-[210/297] bg-white shadow-2xl p-8 font-anek-malayalam overflow-hidden">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <img
           src="/logo.png"
@@ -1027,7 +1130,7 @@ function ListA4Page({
           </div>
         )}
 
-        <div className="border border-slate-700 bg-white">
+        <div className="border border-slate-700 bg-white overflow-hidden">
           <div className="grid grid-cols-[110px,1.8fr,130px,150px] bg-slate-50 font-bold text-[13px] text-slate-800">
             <div className="border-r border-slate-700 p-3 text-center">PMJ No</div>
             <div className="border-r border-slate-700 p-3 text-center">Name</div>
@@ -1038,21 +1141,23 @@ function ListA4Page({
           {records.map((record) => (
             <div
               key={record.id}
-              className="grid grid-cols-[110px,1.8fr,130px,150px] text-slate-800 border-t border-slate-700 min-h-[56px]"
+              className={`grid grid-cols-[110px,1.8fr,130px,150px] text-slate-800 border-t border-slate-700 ${getRowHeightClass(record.name)}`}
             >
-              <div className="border-r border-slate-700 px-3 py-3 text-center font-black text-[18px] text-emerald-700 flex items-center justify-center">
+              <div className="border-r border-slate-700 px-3 py-2 text-center font-black text-[18px] text-emerald-700 flex items-center justify-center">
                 {record.pmj_no}
               </div>
 
-              <div className="border-r border-slate-700 px-3 py-3 font-black text-[16px] leading-snug break-words flex items-center">
+              <div
+                className={`border-r border-slate-700 px-3 py-2 font-black leading-snug break-words flex items-center ${getNameSizeClass(record.name)}`}
+              >
                 {record.name}
               </div>
 
-              <div className="border-r border-slate-700 px-3 py-3 text-center font-black text-[18px] text-rose-700 flex items-center justify-center">
+              <div className="border-r border-slate-700 px-3 py-2 text-center font-black text-[18px] text-rose-700 flex items-center justify-center">
                 {record.token_no}
               </div>
 
-              <div className="px-3 py-3 bg-white" />
+              <div className="px-3 py-2 bg-white" />
             </div>
           ))}
         </div>

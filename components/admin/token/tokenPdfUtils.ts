@@ -74,8 +74,8 @@ const estimateRowUnits = (name: string) => {
 };
 
 export const paginateListRecords = (records: TokenPdfRecord[]) => {
-  const firstPageCapacity = 20;
-  const otherPageCapacity = 24;
+  const firstPageCapacity = 18;
+  const otherPageCapacity = 20;
 
   const pages: TokenPdfRecord[][] = [];
   let currentPage: TokenPdfRecord[] = [];
@@ -157,14 +157,21 @@ const renderElementToCanvas = async (element: HTMLElement) => {
   });
 };
 
-export const generateTokenPdfFromRenderedPages = async ({
-  tokenPageElements,
-  listPageElements,
+export const generatePdfFromRenderedPages = async ({
+  pageElements,
   fileName,
+  documentLabel,
+  onProgress,
 }: {
-  tokenPageElements: HTMLElement[];
-  listPageElements: HTMLElement[];
+  pageElements: HTMLElement[];
   fileName: string;
+  documentLabel: string;
+  onProgress?: (progress: {
+    currentPage: number;
+    totalPages: number;
+    percent: number;
+    message: string;
+  }) => void;
 }) => {
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -174,26 +181,52 @@ export const generateTokenPdfFromRenderedPages = async ({
   });
 
   let isFirstPage = true;
+  const totalPages = pageElements.length;
 
-  const addCanvasPage = async (element: HTMLElement) => {
-  const canvas = await renderElementToCanvas(element);
-  const imgData = canvas.toDataURL("image/jpeg", 0.96);
+  const updateProgress = (currentPage: number, percent: number, message: string) => {
+    onProgress?.({
+      currentPage,
+      totalPages,
+      percent: Math.max(0, Math.min(100, percent)),
+      message,
+    });
+  };
 
-  if (!isFirstPage) {
-    pdf.addPage();
+  updateProgress(0, 4, `Loading fonts for ${documentLabel}...`);
+  await ensureMalayalamFontLoaded();
+
+  const addCanvasPage = async (element: HTMLElement, index: number) => {
+    const pageNumber = index + 1;
+    const basePercent = 8 + (index / totalPages) * 86;
+    updateProgress(
+      pageNumber,
+      basePercent,
+      `Rendering ${documentLabel} page ${pageNumber} of ${totalPages}...`
+    );
+
+    const canvas = await renderElementToCanvas(element);
+    const imgData = canvas.toDataURL("image/jpeg", 0.94);
+
+    if (!isFirstPage) {
+      pdf.addPage();
+    }
+
+    updateProgress(
+      pageNumber,
+      basePercent + 3,
+      `Merging ${documentLabel} page ${pageNumber} into the PDF...`
+    );
+
+    pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
+    isFirstPage = false;
+  };
+
+  for (let i = 0; i < pageElements.length; i++) {
+    await addCanvasPage(pageElements[i], i);
   }
 
-  pdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
-  isFirstPage = false;
-};
-
-  for (const page of tokenPageElements) {
-    await addCanvasPage(page);
-  }
-
-  for (let i = 0; i < listPageElements.length; i++) {
-  await addCanvasPage(listPageElements[i]);
-}
+  updateProgress(totalPages, 98, `Saving ${documentLabel} PDF...`);
 
   pdf.save(fileName);
+  updateProgress(totalPages, 100, `${documentLabel} PDF is ready.`);
 };
