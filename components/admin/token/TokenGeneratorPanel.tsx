@@ -1021,7 +1021,7 @@ function PremiumTokenCard({
             </div>
           </div>
 
-          <div className="mt-2 pt-2 border-t border-slate-200 grid grid-cols-[1fr,2fr,1fr] gap-2 flex-1">
+          <div className="mt-2 pt-2 border-t border-slate-200 grid grid-cols-[1fr,2.15fr,1fr] gap-2 flex-1">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 text-center px-2 py-2 flex flex-col shadow-sm">
               <div
                 className={`font-bold tracking-wide text-slate-500 leading-tight ${large ? "text-[11px]" : "text-[8.5px]"
@@ -1047,11 +1047,19 @@ function PremiumTokenCard({
                 NAME
               </div>
 
-              <div
-                className={`font-black text-slate-900 leading-tight my-auto break-words ${large ? "text-[19px]" : "text-[14px]"
-                  }`}
-              >
-                {record.name}
+              <div className="my-auto space-y-1">
+                <div
+                  className={`font-black text-slate-900 leading-tight break-words text-center ${large ? "text-[18px]" : "text-[13px]"
+                    }`}
+                >
+                  {record.name}
+                </div>
+                <div
+                  className={`font-semibold text-slate-600 leading-tight break-words text-center ${large ? "text-[10px]" : "text-[7.5px]"
+                    }`}
+                >
+                  {record.address?.trim() || "No address"}
+                </div>
               </div>
             </div>
 
@@ -1091,8 +1099,10 @@ function ListA4Page({
   pageNumber?: number;
   totalPages?: number;
 }) {
-  const getRowHeightClass = (name: string) => {
-    const length = (name || "").trim().length;
+  const getRowHeightClass = (name: string, address?: string | null) => {
+    const nameLength = (name || "").trim().length;
+    const addressLength = (address || "No address").trim().length;
+    const length = Math.max(nameLength, addressLength * 0.75);
 
     if (length <= 26) return "min-h-[54px]";
     if (length <= 46) return "min-h-[73px]";
@@ -1100,8 +1110,8 @@ function ListA4Page({
     return "min-h-[108px]";
   };
 
-  const getNameSizeClass = (name: string) => {
-    const length = (name || "").trim().length;
+  const getTextSizeClass = (value: string) => {
+    const length = (value || "").trim().length;
 
     if (length <= 46) return "text-[16px]";
     if (length <= 70) return "text-[14px]";
@@ -1131,9 +1141,10 @@ function ListA4Page({
         )}
 
         <div className="border border-slate-700 bg-white overflow-hidden">
-          <div className="grid grid-cols-[110px,1.8fr,130px,150px] bg-slate-50 font-bold text-[13px] text-slate-800">
+          <div className="grid grid-cols-[90px,1.25fr,1.35fr,105px,110px] bg-slate-50 font-bold text-[13px] text-slate-800">
             <div className="border-r border-slate-700 p-3 text-center">PMJ No</div>
             <div className="border-r border-slate-700 p-3 text-center">Name</div>
+            <div className="border-r border-slate-700 p-3 text-center">Address</div>
             <div className="border-r border-slate-700 p-3 text-center">Token No</div>
             <div className="p-3 text-center">Remarks</div>
           </div>
@@ -1141,19 +1152,25 @@ function ListA4Page({
           {records.map((record) => (
             <div
               key={record.id}
-              className={`grid grid-cols-[110px,1.8fr,130px,150px] text-slate-800 border-t border-slate-700 ${getRowHeightClass(record.name)}`}
+              className={`grid grid-cols-[90px,1.25fr,1.35fr,105px,110px] text-slate-800 border-t border-slate-700 ${getRowHeightClass(record.name, record.address)}`}
             >
-              <div className="border-r border-slate-700 px-3 py-2 text-center font-black text-[18px] text-emerald-700 flex items-center justify-center">
+              <div className="border-r border-slate-700 px-2 py-2 text-center font-black text-[18px] text-emerald-700 flex items-center justify-center">
                 {record.pmj_no}
               </div>
 
               <div
-                className={`border-r border-slate-700 px-3 py-2 font-black leading-snug break-words flex items-center ${getNameSizeClass(record.name)}`}
+                className={`border-r border-slate-700 px-3 py-2 font-black leading-snug break-words flex items-center ${getTextSizeClass(record.name)}`}
               >
                 {record.name}
               </div>
 
-              <div className="border-r border-slate-700 px-3 py-2 text-center font-black text-[18px] text-rose-700 flex items-center justify-center">
+              <div
+                className={`border-r border-slate-700 px-3 py-2 font-semibold leading-snug text-slate-700 break-words flex items-center ${getTextSizeClass(record.address?.trim() || "No address")}`}
+              >
+                {record.address?.trim() || "No address"}
+              </div>
+
+              <div className="border-r border-slate-700 px-2 py-2 text-center font-black text-[18px] text-rose-700 flex items-center justify-center">
                 {record.token_no}
               </div>
 

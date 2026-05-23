@@ -64,8 +64,10 @@ export const paginateTokenRecords = (
   return pages;
 };
 
-const estimateRowUnits = (name: string) => {
-  const length = (name || "").trim().length;
+const estimateRowUnits = (name: string, address?: string | null) => {
+  const nameLength = (name || "").trim().length;
+  const addressLength = (address || "No address").trim().length;
+  const length = Math.max(nameLength, addressLength * 0.75);
 
   if (length <= 26) return 1;
   if (length <= 46) return 1.35;
@@ -83,7 +85,7 @@ export const paginateListRecords = (records: TokenPdfRecord[]) => {
   let capacity = firstPageCapacity;
 
   for (const record of records) {
-    const rowUnits = estimateRowUnits(record.name);
+    const rowUnits = estimateRowUnits(record.name, record.address);
 
     if (currentUsed + rowUnits > capacity && currentPage.length > 0) {
       pages.push(currentPage);
