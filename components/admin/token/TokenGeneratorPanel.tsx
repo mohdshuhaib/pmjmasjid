@@ -90,6 +90,7 @@ export default function TokenGeneratorPanel() {
 
   const [startPmjNo, setStartPmjNo] = useState("1");
   const [endPmjNo, setEndPmjNo] = useState("");
+  const [selectedPmjNos, setSelectedPmjNos] = useState("");
 
   const [layoutOption, setLayoutOption] = useState<TokenLayoutOption>("1x15");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("tokens");
@@ -159,7 +160,7 @@ export default function TokenGeneratorPanel() {
 
   useEffect(() => {
     setPreviewPageIndex(0);
-  }, [previewMode, sourceType, layoutOption, startPmjNo, endPmjNo, tokenStartNumbers]);
+  }, [previewMode, sourceType, layoutOption, startPmjNo, endPmjNo, selectedPmjNos, tokenStartNumbers]);
 
   const fetchHeaders = async () => {
     setLoadingHeaders(true);
@@ -192,7 +193,7 @@ export default function TokenGeneratorPanel() {
     const { data, error } = await supabase
       .from(tableName)
       .select("id, name, address, pmj_no")
-      .eq("status", "active")
+      .or("status.is.null,status.neq.deceased")
       .not("pmj_no", "is", null)
       .order("pmj_no", { ascending: true });
 
@@ -308,12 +309,21 @@ export default function TokenGeneratorPanel() {
   const filteredBaseRecords = useMemo<TokenRecord[]>(() => {
     const start = Number(startPmjNo || 0);
     const end = Number(endPmjNo || 0);
+    const selectedNumbers = selectedPmjNos
+      .split(/[\s,]+/)
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const selectedNumberSet = new Set(selectedNumbers);
 
-    if (!start || !end || end < start) return [];
+    if (selectedNumberSet.size === 0 && (!start || !end || end < start)) return [];
 
     return rows
       .filter((row) => {
         const pmj = row.pmj_no ?? 0;
+        if (selectedNumberSet.size > 0) {
+          return selectedNumberSet.has(pmj);
+        }
+
         return pmj >= start && pmj <= end;
       })
       .sort((a, b) => (a.pmj_no ?? 0) - (b.pmj_no ?? 0))
@@ -321,7 +331,7 @@ export default function TokenGeneratorPanel() {
         ...row,
         source: sourceType,
       }));
-  }, [rows, startPmjNo, endPmjNo, sourceType]);
+  }, [rows, startPmjNo, endPmjNo, selectedPmjNos, sourceType]);
 
   const tokenStartNumber = Number(tokenStartNumbers[sourceType] || 1);
 
@@ -618,6 +628,22 @@ export default function TokenGeneratorPanel() {
                   className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                Selected PMJ Numbers
+              </label>
+              <textarea
+                value={selectedPmjNos}
+                onChange={(e) => setSelectedPmjNos(e.target.value)}
+                placeholder="21, 25, 26, 88"
+                rows={3}
+                className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Leave empty to use the start/end PMJ range.
+              </p>
             </div>
 
             <div>
